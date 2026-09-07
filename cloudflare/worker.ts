@@ -786,6 +786,100 @@ async function fetchBaiduHotList() {
   }
 }
 
+// ===== RSS 兜底源 =====
+// 公共 RSSHub 实例上持续维护的热榜路由，已逐条实测可用性与更新频率（2026-09）。
+// 官方 API 取不到时依次尝试；某个实例挂掉会自动切到下一个。
+const RSS_HOTLIST_FEEDS: Record<HotListKind, string[]> = {
+  weibo: [
+    'https://rsshub.woodland.cafe/weibo/search/hot',
+    'https://hub.slarker.me/weibo/search/hot',
+    'https://rss.quickso.cn/weibo/search/hot',
+  ],
+  zhihu: [
+    'https://rsshub.woodland.cafe/zhihu/hot',
+    'https://hub.slarker.me/zhihu/hot',
+    'https://rss.quickso.cn/zhihu/hot',
+  ],
+  baidu: [
+    'https://rsshub.woodland.cafe/baidu/top',
+    'https://rss.quickso.cn/baidu/top',
+    'https://hub.slarker.me/baidu/top',
+  ],
+}
+
+function decodeXmlText(input: string) {
+  return input
+    .replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, '$1')
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, hex: string) => String.fromCodePoint(Number.parseInt(hex, 16)))
+    .replace(/&#(\d+);/g, (_, dec: string) => String.fromCodePoint(Number.parseInt(dec, 10)))
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;|&apos;/g, "'")
+    .replace(/&amp;/g, '&')
+    .trim()
+}
+
+function extractXmlTag(block: string, tag: string) {
+  const match = block.match(new RegExp(`<${tag}(?:\\s[^>]*)?>([\\s\\S]*?)</${tag}>`, 'i'))
+  return match ? decodeXmlText(match[1]) : ''
+}
+
+function parseRssItems(xml: string) {
+  const blocks = xml.match(/<item(?:\s[^>]*)?>[\s\S]*?<\/item>/gi) || []
+  return blocks
+    .map((block) => {
+      const title = extractXmlTag(block, 'title')
+      const link = extractXmlTag(block, 'link') || extractXmlTag(block, 'guid')
+      return {
+        index: 0,
+        title,
+        desc: '',
+        hot: '',
+        pic: '',
+        url: link,
+        mobileUrl: link,
+      }
+    })
+    .filter((item) => item.title && item.url)
+}
+
+async function fetchRssHotList(type: HotListKind) {
+  for (const feedUrl of RSS_HOTLIST_FEEDS[type]) {
+    try {
+      const upstream = await fetch(feedUrl, {
+        headers: {
+          Accept: 'application/rss+xml, application/xml, text/xml',
+          'User-Agent': 'startpage/1.0',
+        },
+        cf: {
+          cacheTtl: 120,
+          cacheEverything: true,
+        },
+      })
+      if (!upstream.ok) continue
+
+      const xml = await upstream.text()
+      const items = parseRssItems(xml)
+        .map(normalizeHotListItem)
+        .filter((item) => item.title && item.url)
+        .slice(0, 30)
+      if (!items.length) continue
+
+      return {
+        success: true,
+        title: hotListDisplayName(type),
+        subtitle: '',
+        updateTime: new Date().toISOString(),
+        data: items,
+      }
+    } catch {
+      continue
+    }
+  }
+  return null
+}
+
 async function getHotList(request: Request, env: Env, url: URL) {
   const type = url.searchParams.get('type') as HotListKind | null
   if (type !== 'zhihu' && type !== 'baidu' && type !== 'weibo') {
@@ -796,6 +890,7 @@ async function getHotList(request: Request, env: Env, url: URL) {
     (type === 'zhihu' ? await fetchZhihuHotList() : null) ||
     (type === 'weibo' ? await fetchWeiboHotList() : null) ||
     (type === 'baidu' ? await fetchBaiduHotList() : null) ||
+    (await fetchRssHotList(type)) ||
     (await fetchVvhanHotList(type)) ||
     (await fetchVhanHotList(type))
 
