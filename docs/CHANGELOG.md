@@ -1,5 +1,11 @@
 # Startpage 更新日志
 
+## 2026-09-07 修复 start.abobb.com 域名下 API 被跨域拦截
+
+- 问题：在 start.abobb.com 打开页面时，登录等所有 API 请求被浏览器 CORS 拦截，提示"操作失败"。
+- 原因：Cloudflare Worker 的跨域白名单只配置了 start.abobb.site。
+- 修复：白名单改为逗号分隔多域名格式，现同时放行 .site 与 .com 两个站点域名。
+
 ## 2026-09-07 热榜源调整：掘金与 Hacker News 替换百度微博
 
 - 移除百度热点和微博热搜：内容以社会新闻和娱乐话题为主，与起始页的技术向定位不符。
