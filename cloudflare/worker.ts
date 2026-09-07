@@ -720,7 +720,6 @@ function parseRssItems(xml: string) {
       const title = extractXmlTag(block, 'title')
       const link = extractXmlTag(block, 'link') || extractXmlTag(block, 'guid')
       return {
-        index: 0,
         title,
         desc: '',
         hot: '',
