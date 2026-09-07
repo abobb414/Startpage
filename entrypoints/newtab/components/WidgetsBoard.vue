@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { ElMessage } from 'element-plus'
 import CloseRound from '~icons/ic/round-close'
+import EditRound from '~icons/ic/round-edit'
 import RssFeedRound from '~icons/ic/round-rss-feed'
 import StickyNote2Round from '~icons/ic/round-sticky-note-2'
+import TrendingUpRound from '~icons/ic/round-trending-up'
 
 import {
   createNote,
@@ -153,7 +155,8 @@ window.addEventListener('start-account-signed-out', () => {
       aria-label="打开热榜"
       @click="openPanel('rss')"
     >
-      <el-icon><rss-feed-round /></el-icon>
+      <el-icon class="action-icon action-icon--a"><rss-feed-round /></el-icon>
+      <el-icon class="action-icon action-icon--b"><trending-up-round /></el-icon>
     </button>
     <button
       type="button"
@@ -162,7 +165,8 @@ window.addEventListener('start-account-signed-out', () => {
       aria-label="打开便签"
       @click="openPanel('notes')"
     >
-      <el-icon><sticky-note2-round /></el-icon>
+      <el-icon class="action-icon action-icon--a"><sticky-note2-round /></el-icon>
+      <el-icon class="action-icon action-icon--b"><edit-round /></el-icon>
     </button>
 
     <teleport to="body">
@@ -314,7 +318,7 @@ window.addEventListener('start-account-signed-out', () => {
       &:hover,
       &:focus-visible {
         .el-icon {
-          animation: none;
+          filter: drop-shadow(0 0 4px rgb(255 255 255 / 70%));
         }
 
         &::before {
@@ -350,7 +354,7 @@ window.addEventListener('start-account-signed-out', () => {
       &:hover,
       &:focus-visible {
         .el-icon {
-          animation: none;
+          filter: drop-shadow(0 0 4px rgb(255 255 255 / 70%));
         }
 
         &::before,

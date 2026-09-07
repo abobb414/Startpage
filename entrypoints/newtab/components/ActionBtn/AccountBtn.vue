@@ -93,7 +93,8 @@ function startDockSync(nextSession: AuthSession) {
     @contextmenu.prevent.stop
   >
     <div role="button" tabindex="0" class="action-btn account-btn account-btn--signed-in">
-      <el-icon><person-round /></el-icon>
+      <el-icon class="action-icon action-icon--a"><person-round /></el-icon>
+      <el-icon class="action-icon action-icon--b"><manage-accounts-round /></el-icon>
       <span class="account-btn__dot"></span>
     </div>
     <template #dropdown>
@@ -120,7 +121,8 @@ function startDockSync(nextSession: AuthSession) {
     @click="dialogVisible = true"
     @keydown.enter="dialogVisible = true"
   >
-    <el-icon><person-off-round /></el-icon>
+    <el-icon class="action-icon action-icon--a"><person-off-round /></el-icon>
+    <el-icon class="action-icon action-icon--b"><person-round /></el-icon>
   </div>
 
   <auth-dialog v-if="dialogVisible" v-model="dialogVisible" @signed-in="handleSignedIn" />
@@ -138,13 +140,6 @@ function startDockSync(nextSession: AuthSession) {
   &::before,
   &::after {
     display: none;
-  }
-
-  &:hover,
-  &:focus-visible {
-    .el-icon {
-      animation: none;
-    }
   }
 
   &--signed-in {

@@ -75,10 +75,16 @@
   &:hover,
   &:focus-visible {
     color: var(--el-color-primary);
+    transform: translateY(-2px);
 
     svg {
       filter: drop-shadow(0 0 3px rgb(255 255 255 / 60%));
     }
+  }
+
+  &:active {
+    transform: translateY(-1px) scale(0.92);
+    transition-duration: 0.06s;
   }
 
   &:focus-visible {
@@ -106,7 +112,7 @@
   &:hover,
   &:focus-visible {
     .el-icon {
-      transform: none;
+      transform: rotate(180deg);
     }
   }
 
@@ -218,4 +224,82 @@
   html.dialog-acrylic & {
     @include acrylic.acrylic;
   }
+}
+
+// ===== 操作按钮动效（morphicons 风格：图标间平滑形变）=====
+// 入场：四个按钮从左到右依次淡入上浮（克制、无过冲）
+@keyframes action-btn-pop-in {
+  0% {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+// 待机：账号在线绿点呼吸
+@keyframes account-dot-breathe {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgb(var(--el-color-success-rgb, 103 194 58) / 55%);
+  }
+
+  50% {
+    box-shadow: 0 0 0 4px rgb(var(--el-color-success-rgb, 103 194 58) / 0%);
+  }
+}
+
+.action-btn-container .action-btn {
+  animation: action-btn-pop-in 0.4s ease-out backwards;
+}
+
+// 视觉上从左到右依次入场（容器是 row-reverse，便签在 DOM 最后、显示在最左）
+.action-btn-container .widgets-board__trigger--notes {
+  animation-delay: 0.04s;
+}
+
+.action-btn-container .widgets-board__trigger--rss {
+  animation-delay: 0.1s;
+}
+
+.action-btn-container .setting-btn {
+  animation-delay: 0.16s;
+}
+
+.action-btn-container .account-btn {
+  animation-delay: 0.22s;
+}
+
+// ---- 图标形变（morph）----
+// 每个按钮放两个图标（--a 默认 / --b 悬停目标），叠在同一格子里；
+// 悬停时旧图标缩小旋出、新图标旋入放大，弹簧曲线，morphicons 的手感。
+.action-btn .action-icon {
+  grid-area: 1 / 1;
+  transition:
+    opacity 0.2s ease,
+    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.action-btn .action-icon--b {
+  opacity: 0;
+  transform: scale(0.4) rotate(-90deg);
+}
+
+.action-btn:hover .action-icon--a,
+.action-btn:focus-visible .action-icon--a {
+  opacity: 0;
+  transform: scale(0.4) rotate(90deg);
+}
+
+.action-btn:hover .action-icon--b,
+.action-btn:focus-visible .action-icon--b {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.account-btn__dot {
+  animation: account-dot-breathe 2.4s ease-in-out infinite;
 }
