@@ -46,8 +46,8 @@ const currentHotList = computed(() => hotLists[hotKind.value]?.data)
 const hotItems = computed(() => (currentHotList.value?.data ?? []).slice(0, 20))
 const hotOptions: Array<{ label: string; value: HotListKind }> = [
   { label: '知乎', value: 'zhihu' },
-  { label: '百度', value: 'baidu' },
-  { label: '微博', value: 'weibo' },
+  { label: '掘金', value: 'juejin' },
+  { label: 'HN', value: 'hackernews' },
 ]
 
 async function load() {

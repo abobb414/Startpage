@@ -22,7 +22,7 @@ export interface RssSource {
   createdAt?: string
 }
 
-export type HotListKind = 'zhihu' | 'baidu' | 'weibo'
+export type HotListKind = 'zhihu' | 'juejin' | 'hackernews'
 
 export interface HotListItem {
   index: number

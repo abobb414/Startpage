@@ -45,8 +45,9 @@ https://start.abobb.site
   - 首页右侧抽屉和个人中心都可以查看。
 
 - **热榜**
-  - 接入知乎、百度、微博热榜。
+  - 接入知乎、掘金（本周最热）和 Hacker News 热榜。
   - 通过 Cloudflare Worker 代理聚合热榜接口，避免前端直接依赖第三方响应格式。
+  - 官方 API 失效时自动切换到多个公共 RSSHub 实例的 RSS 源兜底。
 
 - **个人中心**
   - 使用和设置页统一的双栏风格。
@@ -258,8 +259,11 @@ Startpage 是当前仓库维护的独立项目。开发过程中参考或使用�
   - Bing 每日壁纸接口来源于 Bing 公开页面接口 `HPImageArchive.aspx`。
   - 本地和在线壁纸缓存逻辑参考了相关开源实现思路。
 
-- **热榜来源**：[VVHan 聚合热榜 API 说明](https://www.vvhan.com/article/zhihu-baidu-weibo-api-kaiyuan)  
-  当前接入知乎热榜、百度热点和微博热搜，并由 Cloudflare Worker 做统一格式整理。
+- **热榜来源**：
+  - 知乎热榜：官方 API 直取，[VVHan 聚合 API](https://www.vvhan.com/article/zhihu-baidu-weibo-api-kaiyuan) 作最后兜底。
+  - 掘金热榜：RSSHub 公共实例的 `/juejin/trending/all/weekly` 路由（本周最热）。
+  - Hacker News：[hnrss.org](https://hnrss.org) 官方 RSS 源。
+  - 均由 Cloudflare Worker 统一抓取并整理格式，RSS 兜底链自动切换实例。
 
 - **天气来源**：[Open-Meteo](https://open-meteo.com/)  
   天气控件使用 Open-Meteo 的免费天气接口，不需要前端 API Key。

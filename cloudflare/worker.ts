@@ -29,7 +29,7 @@ type InviteRow = {
   used_at?: string | null
 }
 
-type HotListKind = 'zhihu' | 'baidu' | 'weibo'
+type HotListKind = 'zhihu' | 'juejin' | 'hackernews'
 
 type HotListItem = {
   index?: number
@@ -53,23 +53,6 @@ type VhanHotListGroup = {
   updateTime?: string
   update_time?: string
   data?: HotListItem[]
-}
-
-type BaiduHotListPayload = {
-  data?: {
-    cards?: Array<{
-      content?: Array<{
-        content?: Array<{
-          index?: number
-          isTop?: boolean
-          url?: string
-          word?: string
-          hotScore?: string | number
-          desc?: string
-        }>
-      }>
-    }>
-  }
 }
 
 type OpenMeteoCurrent = {
@@ -590,15 +573,12 @@ function normalizeHotListItem(item: HotListItem, index: number) {
 }
 
 function hotListDisplayName(type: HotListKind) {
-  return type === 'zhihu' ? '知乎热榜' : type === 'baidu' ? '百度热点' : '微博热搜'
+  return type === 'zhihu' ? '知乎热榜' : type === 'juejin' ? '掘金热榜' : 'Hacker News'
 }
 
 function hotListMatcher(type: HotListKind, group: VhanHotListGroup) {
-  const name = group.name || ''
-  const subtitle = group.subtitle || ''
-  if (type === 'zhihu') return name === '知乎热榜'
-  if (type === 'baidu') return name === '百度热点'
-  return name === '微博' && subtitle === '热搜榜'
+  // vvhan 仅作为知乎热榜的最后兜底，其余类型直接走 RSS
+  return type === 'zhihu' && (group.name || '') === '知乎热榜'
 }
 
 async function fetchVhanHotList(type: HotListKind) {
@@ -698,113 +678,21 @@ async function fetchVvhanHotList(type: HotListKind) {
   }
 }
 
-async function fetchWeiboHotList() {
-  const upstream = await fetch('https://weibo.com/ajax/side/hotSearch', {
-    headers: {
-      Accept: 'application/json',
-      Referer: 'https://s.weibo.com',
-      'User-Agent': 'Mozilla/5.0 startpage/1.0',
-    },
-    cf: {
-      cacheTtl: 90,
-      cacheEverything: true,
-    },
-  })
-  if (!upstream.ok) return null
-
-  const payload = (await upstream.json().catch(() => null)) as
-    | {
-        data?: {
-          realtime?: Array<{
-            note?: string
-            word_scheme?: string
-            num?: number
-          }>
-        }
-      }
-    | null
-  const rows = payload?.data?.realtime
-  if (!rows?.length) return null
-
-  return {
-    success: true,
-    title: '微博热搜',
-    subtitle: '热搜榜',
-    updateTime: new Date().toISOString(),
-    data: rows
-      .map((item, index) => {
-        const query = item.word_scheme || item.note || ''
-        return {
-          index: index + 1,
-          title: item.note || query,
-          desc: '',
-          hot: item.num ? `${Math.round(item.num / 10000)}万` : '',
-          pic: '',
-          url: `https://s.weibo.com/weibo?q=${encodeURIComponent(query)}&t=31&band_rank=12&Refer=top`,
-          mobileUrl: `https://s.weibo.com/weibo?q=${encodeURIComponent(query)}&t=31&band_rank=12&Refer=top`,
-        }
-      })
-      .filter((item) => item.title && item.url)
-      .slice(0, 30),
-  }
-}
-
-async function fetchBaiduHotList() {
-  const upstream = await fetch('https://top.baidu.com/api/board?platform=wise&tab=realtime', {
-    headers: {
-      Accept: 'application/json',
-      'User-Agent': 'Mozilla/5.0 startpage/1.0',
-    },
-    cf: {
-      cacheTtl: 300,
-      cacheEverything: true,
-    },
-  })
-  if (!upstream.ok) return null
-
-  const payload = (await upstream.json().catch(() => null)) as BaiduHotListPayload | null
-  const rows = payload?.data?.cards?.flatMap((card) => card.content?.flatMap((group) => group.content ?? []) ?? [])
-  if (!rows?.length) return null
-
-  return {
-    success: true,
-    title: '百度热点',
-    subtitle: '实时热点',
-    updateTime: new Date().toISOString(),
-    data: rows
-      .filter((item) => item.word && !item.isTop)
-      .map((item, index) => ({
-        index: Number(item.index ?? index + 1),
-        title: item.word || '',
-        desc: item.desc || '',
-        hot: item.hotScore === undefined ? '' : String(item.hotScore),
-        pic: '',
-        url: item.url || `https://m.baidu.com/s?word=${encodeURIComponent(item.word || '')}`,
-        mobileUrl: item.url || `https://m.baidu.com/s?word=${encodeURIComponent(item.word || '')}`,
-      }))
-      .slice(0, 30),
-  }
-}
-
 // ===== RSS 兜底源 =====
 // 公共 RSSHub 实例上持续维护的热榜路由，已逐条实测可用性与更新频率（2026-09）。
 // 官方 API 取不到时依次尝试；某个实例挂掉会自动切到下一个。
 const RSS_HOTLIST_FEEDS: Record<HotListKind, string[]> = {
-  weibo: [
-    'https://rsshub.woodland.cafe/weibo/search/hot',
-    'https://hub.slarker.me/weibo/search/hot',
-    'https://rss.quickso.cn/weibo/search/hot',
-  ],
   zhihu: [
     'https://rsshub.woodland.cafe/zhihu/hot',
     'https://hub.slarker.me/zhihu/hot',
     'https://rss.quickso.cn/zhihu/hot',
   ],
-  baidu: [
-    'https://rsshub.woodland.cafe/baidu/top',
-    'https://rss.quickso.cn/baidu/top',
-    'https://hub.slarker.me/baidu/top',
+  juejin: [
+    'https://rsshub.woodland.cafe/juejin/trending/all/weekly',
+    'https://hub.slarker.me/juejin/trending/all/weekly',
+    'https://rss.quickso.cn/juejin/trending/all/weekly',
   ],
+  hackernews: ['https://hnrss.org/frontpage', 'https://hnrss.org/best'],
 }
 
 function decodeXmlText(input: string) {
@@ -882,17 +770,14 @@ async function fetchRssHotList(type: HotListKind) {
 
 async function getHotList(request: Request, env: Env, url: URL) {
   const type = url.searchParams.get('type') as HotListKind | null
-  if (type !== 'zhihu' && type !== 'baidu' && type !== 'weibo') {
+  if (type !== 'zhihu' && type !== 'juejin' && type !== 'hackernews') {
     return json(request, env, { error: 'invalidHotListType' }, { status: 400 })
   }
 
   const payload =
     (type === 'zhihu' ? await fetchZhihuHotList() : null) ||
-    (type === 'weibo' ? await fetchWeiboHotList() : null) ||
-    (type === 'baidu' ? await fetchBaiduHotList() : null) ||
     (await fetchRssHotList(type)) ||
-    (await fetchVvhanHotList(type)) ||
-    (await fetchVhanHotList(type))
+    (type === 'zhihu' ? (await fetchVvhanHotList(type)) || (await fetchVhanHotList(type)) : null)
 
   if (!payload?.data.length) {
     return json(request, env, { error: 'hotListUnavailable' }, { status: 502 })
