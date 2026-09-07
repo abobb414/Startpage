@@ -834,9 +834,9 @@ function formatWind(kmh: number): string {
 
 async function getFallbackLocation(request: Request): Promise<{ lat: number; lon: number; city: string } | null> {
   try {
+    // 注意：结果因客户端 IP 而异，绝不能加 cf 边缘缓存（URL 不含 IP，会串位置）
     const resp = await fetch('http://ip-api.com/json/?lang=zh-CN&fields=lat,lon,city', {
       headers: { 'User-Agent': 'startpage/1.0' },
-      cf: { cacheTtl: 3600, cacheEverything: true },
     })
     if (!resp.ok) return null
     const data = (await resp.json().catch(() => null)) as { lat?: number; lon?: number; city?: string } | null
