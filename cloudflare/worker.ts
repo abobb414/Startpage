@@ -114,8 +114,13 @@ function normalizeChinaPlaceName(name: unknown) {
 
 function createCorsHeaders(request: Request, env: Env) {
   const origin = request.headers.get('Origin') || ''
-  const allowedOrigin = env.ALLOWED_ORIGIN || '*'
-  const allowOrigin = allowedOrigin === '*' || origin === allowedOrigin ? origin || '*' : allowedOrigin
+  const allowedOrigins = (env.ALLOWED_ORIGIN || '*')
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean)
+  const isWildcard = allowedOrigins.includes('*')
+  const isAllowed = isWildcard || allowedOrigins.includes(origin)
+  const allowOrigin = isAllowed ? origin || '*' : allowedOrigins[0] || '*'
   return {
     'Access-Control-Allow-Origin': allowOrigin,
     'Access-Control-Allow-Methods': 'GET,POST,PUT,PATCH,DELETE,OPTIONS',

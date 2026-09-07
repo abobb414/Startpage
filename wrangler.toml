@@ -3,7 +3,7 @@ main = "cloudflare/worker.ts"
 compatibility_date = "2026-06-18"
 
 [vars]
-ALLOWED_ORIGIN = "https://start.abobb.site"
+ALLOWED_ORIGIN = "https://start.abobb.site, https://start.abobb.com"
 
 [[routes]]
 pattern = "start-api.abobb.site"
