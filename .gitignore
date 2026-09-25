@@ -1,0 +1,5 @@
+# 部署工具本地状态（不应入库）
+.vercel/
+
+# macOS
+.DS_Store

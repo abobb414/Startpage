@@ -1,0 +1,289 @@
+/* 字体改为本地自托管：原来 @import Google Fonts，国内手机基本加载不到，
+   会静默 fallback 成系统字体 —— 这也是「电脑和手机字形不一样」的一个来源。
+   Manrope 是可变字体（一个文件覆盖 200–800 全字重），DM Mono 是静态的，按字重各一个。 */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;font-display:swap;src:url('/assets/fonts/manrope-latin.woff2?v=e310b55a') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/dm-mono-400.woff2?v=fd7521f3') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:500;font-display:swap;src:url('/assets/fonts/dm-mono-500.woff2?v=0e263db5') format('woff2')}
+
+:root{--bg:#f2f4f5;--ink:#17212b;--muted:#74808b;--faint:#aab4bd;--line:rgba(23,33,43,.13);--line-strong:rgba(23,33,43,.23);--surface:rgba(249,251,252,.78);--solid:#f9fbfc;--accent:#3d718f;--accent-soft:rgba(61,113,143,.1);--shadow:0 18px 60px rgba(25,43,58,.12);--ease:cubic-bezier(.22,.61,.36,1);--gutter:28px}
+:root.dark{--bg:#11171d;--ink:#e7edf1;--muted:#99a6b0;--faint:#64717c;--line:rgba(231,237,241,.13);--line-strong:rgba(231,237,241,.25);--surface:rgba(22,30,37,.78);--solid:#182129;--accent:#9ac5d7;--accent-soft:rgba(154,197,215,.12);--shadow:0 18px 60px rgba(0,0,0,.28)}
+*{box-sizing:border-box}html,body{margin:0;min-width:320px;min-height:100%;font-family:Manrope,system-ui,sans-serif;color:var(--ink);background:var(--bg)}body{min-height:100vh}button,input{font:inherit;color:inherit}.app-shell{position:relative;min-height:100vh;overflow:visible;padding-bottom:74px;background:var(--bg)}.wallpaper,.wallpaper-wash{position:fixed;top:0;left:0;right:0;bottom:auto;width:100%;height:100vh;height:var(--wp-h,100vh);pointer-events:none}.wallpaper{background:#d7e0e5 center/cover no-repeat;filter:saturate(.82);transform:scale(1.02);transition:background-image 600ms var(--ease)}.wallpaper-wash{background:transparent}:root.dark .wallpaper-wash{background:linear-gradient(180deg,rgba(9,13,17,.68),rgba(9,13,17,.78) 55%,rgba(9,13,17,.94))}.topbar,.workspace{position:relative;z-index:1}.topbar{display:flex;align-items:center;justify-content:space-between;padding:27px clamp(22px,5vw,76px)}.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}.brand-mark{display:block;width:28px;height:28px;object-fit:contain}.brand-copy{display:flex;flex-direction:column;line-height:1.1}.brand-copy strong{font-size:14px;letter-spacing:.02em}.brand-copy small{margin-top:4px;color:var(--muted);font:10px 'DM Mono',monospace;letter-spacing:.04em}.topbar-actions{display:flex;align-items:center;gap:17px}.sync-status,.eyebrow,.section-kicker,.surface-foot,.bottom-bar{font:11px 'DM Mono',monospace;letter-spacing:.02em}.sync-status{color:var(--muted)}.icon-button,.text-button,.wallpaper-info{border:0;background:transparent;cursor:pointer}.icon-button{width:34px;height:34px;display:grid;place-items:center;border:1px solid var(--line);transition:background 180ms var(--ease),color 180ms var(--ease),transform 180ms var(--ease)}.icon-button:hover,.icon-button:focus-visible{color:var(--accent);background:var(--accent-soft);transform:translateY(-1px);outline:0}.icon-button.small{width:29px;height:29px}.morph-icon{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.icon-moon{opacity:0;transform:scale(.5) rotate(-20deg);transform-origin:center}.dark .icon-sun{opacity:0;transform:scale(.5) rotate(20deg)}.dark .icon-moon{opacity:1;transform:scale(1) rotate(0)}.icon-sun,.icon-moon{transition:opacity 220ms var(--ease),transform 260ms var(--ease)}.workspace{max-width:1030px;margin:clamp(42px,11vh,124px) auto 0;padding:0 28px 110px}.hero-block{margin-bottom:45px}.eyebrow{display:flex;align-items:center;gap:8px;color:var(--muted);text-transform:uppercase}.status-dot{width:6px;height:6px;background:var(--accent);border-radius:50%}.hero-block h1{margin:14px 0 7px;font-size:clamp(38px,6vw,72px);font-weight:500;letter-spacing:-.055em;line-height:1.02}.hero-meta{display:flex;align-items:center;gap:13px;color:var(--muted);font:12px 'DM Mono',monospace}.hero-meta #clock{color:var(--ink)}.meta-divider{width:28px;height:1px;background:var(--line-strong)}.search-panel{position:relative;display:flex;align-items:center;height:62px;padding:0 16px;border:1px solid var(--line-strong);background:var(--surface);box-shadow:var(--shadow);backdrop-filter:blur(18px);transition:border-color 180ms var(--ease),box-shadow 180ms var(--ease)}.search-panel:focus-within{border-color:var(--accent);box-shadow:0 15px 48px rgba(40,75,92,.16)}.search-icon{width:19px;height:19px;fill:none;stroke:var(--muted);stroke-width:1.5;stroke-linecap:round}.search-panel input{flex:1;min-width:0;border:0;outline:0;background:transparent;padding:0 14px;font-size:15px}.search-panel input::placeholder{color:var(--faint)}.search-engine{position:relative;border:0;border-left:1px solid var(--line);padding:8px 4px 8px 16px;background:transparent;color:var(--muted);font:11px 'DM Mono',monospace;cursor:pointer}.search-engine span{padding-left:8px;color:var(--ink)}.engine-menu{position:absolute;z-index:4;right:12px;top:55px;min-width:126px;padding:5px;border:1px solid var(--line-strong);background:var(--solid);box-shadow:var(--shadow)}.engine-menu button{display:block;width:100%;padding:9px 10px;text-align:left;border:0;background:transparent;font-size:12px;cursor:pointer}.engine-menu button:hover{background:var(--accent-soft);color:var(--accent)}.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}.surface{min-height:275px;padding:23px;border:1px solid var(--line);background:var(--surface);backdrop-filter:blur(17px);box-shadow:0 10px 34px rgba(25,43,58,.06)}.surface-head{display:flex;align-items:flex-start;justify-content:space-between}.section-kicker{display:block;color:var(--faint);font-size:10px}.surface h2{margin:7px 0 0;font-size:18px;font-weight:600;letter-spacing:-.02em}.text-button{padding:2px 0;color:var(--muted);font-size:12px}.text-button:hover{color:var(--accent)}.note-form{display:flex;margin-top:29px;border-bottom:1px solid var(--line-strong)}.note-form input{flex:1;min-width:0;padding:9px 0;border:0;outline:0;background:transparent;font-size:13px}.note-form input::placeholder{color:var(--faint)}.note-form button{width:30px;border:0;background:transparent;color:var(--accent);font-size:21px;cursor:pointer}.notes-list,.trend-list{margin-top:16px}.note-item{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:12px;animation:row-in 240ms var(--ease) both}.note-item button{flex:0 0 auto;width:17px;height:17px;padding:0;border:1px solid var(--line-strong);border-radius:50%;background:transparent;color:var(--muted);font-size:10px;cursor:pointer}.note-item.done span{text-decoration:line-through;color:var(--faint)}.note-item .remove-note{margin-left:auto;border:0;border-radius:0;font-size:13px;opacity:0}.note-item:hover .remove-note{opacity:1}.surface-foot{margin:18px 0 0;color:var(--faint);font-size:10px}.trend-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);text-decoration:none;color:inherit}.trend-index{color:var(--accent);font:11px 'DM Mono',monospace}.trend-title{font-size:12px;line-height:1.45}.trend-domain{margin-top:4px;color:var(--faint);font:10px 'DM Mono',monospace}.loading-line{height:11px;width:92%;margin:18px 0;border-bottom:1px solid var(--line);opacity:.7}.loading-line.short{width:68%}.bottom-bar{position:fixed;left:0;right:0;bottom:0;z-index:3;display:flex;justify-content:space-between;align-items:center;padding:24px clamp(22px,5vw,76px) 20px;color:var(--muted);background:linear-gradient(180deg,rgba(242,244,245,.14),rgba(242,244,245,.9))}
+:root.dark .bottom-bar{background:linear-gradient(180deg,rgba(9,13,17,.22),rgba(9,13,17,.9))}.wallpaper-info{color:var(--muted);font:11px 'DM Mono',monospace}.wallpaper-info:hover{color:var(--accent)}@keyframes row-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}@media(max-width:700px){:root{--gutter:clamp(24px,6.6vw,32px)}.topbar{padding:18px var(--gutter)}.sync-status{display:none}.workspace{margin-top:46px;padding:0 var(--gutter) 96px}.hero-block{margin-bottom:30px}.content-grid{grid-template-columns:1fr}.surface{min-height:0}.search-panel{height:56px}.search-engine{padding-left:8px;font-size:10px}}@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+
+.search-panel{z-index:5;overflow:visible}.engine-menu{z-index:20}.source-switch{display:inline-flex;align-items:center;gap:6px;padding:5px 10px 5px 9px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--muted);font:11px 'DM Mono',monospace;letter-spacing:.02em;cursor:pointer;transition:color 160ms var(--ease),background 160ms var(--ease),border-color 160ms var(--ease)}.source-switch:hover,.source-switch:focus-visible{color:var(--accent);border-color:var(--accent);background:var(--accent-soft);outline:0}.source-switch svg{width:13px;height:13px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}.source-switch[data-busy=true] svg{animation:switch-spin 900ms linear infinite}@keyframes switch-spin{to{transform:rotate(360deg)}}.trend-list{position:relative;z-index:1}
+
+:root{--halo:0 1px 18px rgba(255,255,255,.45)}
+:root.dark{--halo:0 1px 18px rgba(0,0,0,.5)}
+.hero-block h1,.eyebrow,.hero-meta{text-shadow:var(--halo)}
+
+/* ---- 统一字体系统（10:54） ---- */
+/* 两级字阶：元信息 11px mono / 正文 13px；字重只用 400/500/600 */
+.brand-copy small,.section-kicker,.surface-foot,.trend-domain,
+.wallpaper-info,.eyebrow,.source-switch,.search-engine,.trend-index,#wallpaperCaption{
+  font-size:11px;font-weight:400;letter-spacing:.04em;line-height:1.45}
+.hero-meta{font-size:12px;letter-spacing:.04em;line-height:1.45}
+.hero-meta #clock{font-weight:500}
+.trend-title,.note-item,.empty-state{font-size:13px;font-weight:400;line-height:1.55}
+.trend-title{font-weight:500}
+.search-panel input,.note-form input{font-size:13px}
+.surface h2{font-size:16px;font-weight:600;letter-spacing:-.01em}
+.hero-block h1{font-weight:600}
+
+/* ---- 页脚改为文档流，不悬浮 ---- */
+.bottom-bar,:root.dark .bottom-bar{
+  position:relative;z-index:1;max-width:1030px;margin:0 auto;background:transparent!important;
+  padding:6px 28px 30px;text-align:left}
+.app-shell{padding-bottom:0}
+.workspace{padding-bottom:22px}
+
+/* ---- 手机端页脚与内容列共用同一条左缘 ----
+   上面那条 `.bottom-bar,:root.dark .bottom-bar{padding:6px 28px 30px}` 里的 28px 是桌面端
+   为了对齐 1030px 居中列而设的；在 <1030px 时 max-width 失效，28px 就比内容列多缩进 10px
+   （实测：手机端页脚 28px / 内容 18px，两条左缘没吃在一起）。
+   注：原先 @media(max-width:700px) 里的 `.bottom-bar{padding:16px 18px}` 与 `.hero-block h1{font-size:48px}`
+   都是同权重且源码顺序在前，从未生效过（后面那条 h1 也被 clamp 版覆盖），已一并删掉。 */
+@media(max-width:700px){
+  .bottom-bar,:root.dark .bottom-bar{padding:6px var(--gutter) 30px}
+}
+
+/* ---- 字色随壁纸明暗自适应（JS 采样后挂 wp-top-* / wp-bottom-* 类） ----
+   默认按浅底处理；采样到深色背景则切到亮字 */
+:root:not(.dark).wp-top-dark .eyebrow,
+:root:not(.dark).wp-top-dark .hero-meta{color:#dce5eb}
+:root:not(.dark).wp-top-dark .hero-block h1{color:#f4f8fa;text-shadow:0 1px 16px rgba(6,10,14,.5),0 1px 4px rgba(6,10,14,.35)}
+:root:not(.dark).wp-top-dark .hero-meta #clock{color:#fff}
+:root:not(.dark).wp-top-dark .meta-divider{background:rgba(255,255,255,.45)}
+:root:not(.dark).wp-top-dark #weatherText{color:#a9cde4}
+:root:not(.dark).wp-top-dark .status-dot{background:#e8a558;box-shadow:0 0 0 3px rgba(232,165,88,.22)}
+:root:not(.dark).wp-top-dark .brand{color:#f4f8fa;text-shadow:0 1px 10px rgba(6,10,14,.5)}
+:root:not(.dark).wp-top-dark .brand-copy small{color:rgba(255,255,255,.72)}
+:root:not(.dark).wp-top-light .status-dot{background:#d98f3f;box-shadow:0 0 0 3px rgba(217,143,63,.18)}
+:root:not(.dark).wp-top-light .eyebrow{color:#2f3d47}
+:root:not(.dark).wp-top-light .hero-block h1{color:#0f181f;text-shadow:0 2px 28px rgba(255,255,255,.65),0 1px 3px rgba(255,255,255,.55)}
+:root:not(.dark).wp-top-light .hero-meta{color:#5c6a75}
+:root:not(.dark).wp-top-light .hero-meta #clock{color:#0f181f}
+:root:not(.dark).wp-top-light .meta-divider{background:rgba(15,24,31,.42)}
+:root:not(.dark).wp-top-light #weatherText{color:#2d5e80}
+
+:root:not(.dark).wp-bottom-dark .bottom-bar{color:rgba(255,255,255,.92);text-shadow:0 1px 10px rgba(8,14,18,.55)}
+:root:not(.dark).wp-bottom-dark .bottom-bar #wallpaperCaption{color:rgba(255,255,255,.8)}
+:root:not(.dark).wp-bottom-dark .bottom-bar .wallpaper-info{color:rgba(255,255,255,.92)}
+:root:not(.dark).wp-bottom-dark .bottom-bar .wallpaper-info:hover{color:#ffd9a0}
+:root:not(.dark).wp-bottom-light .bottom-bar{color:#4a5761;text-shadow:0 1px 12px rgba(255,255,255,.6)}
+:root:not(.dark).wp-bottom-light .bottom-bar #wallpaperCaption{color:#5c6a75}
+:root:not(.dark).wp-bottom-light .bottom-bar .wallpaper-info{color:#3a4750}
+:root:not(.dark).wp-bottom-light .bottom-bar .wallpaper-info:hover{color:#b3722a}
+:root.dark .bottom-bar{color:rgba(240,246,250,.92);text-shadow:0 1px 10px rgba(0,0,0,.6)}
+:root.dark .bottom-bar .wallpaper-info:hover{color:#ffd9a0}
+
+/* ---- 搜索引擎官方图标（本地官方资产，来源见 assets/engines/SOURCES.txt） ---- */
+/* 切换钮：图标 + 名称 + 箭头，整体降为灰白色调，hover 才提亮 */
+.search-engine{display:inline-flex;align-items:center;gap:8px}
+.search-engine span{padding-left:0}
+.search-engine .engine-name{color:var(--muted)}
+.search-engine .chev{color:var(--faint);font-size:10px;line-height:1}
+.search-engine:hover .engine-name,.search-engine:hover .chev{color:var(--accent)}
+/* 图标容器：图标本身保持官方原色，不做任何染色或滤镜 */
+.engine-ico{display:inline-flex;align-items:center;justify-content:center;flex:none;width:15px;height:15px}
+.engine-ico img{display:block;width:100%;height:100%;object-fit:contain}
+/* 下拉菜单：图标与文字同一基线，命中区域更舒展 */
+.engine-menu{min-width:172px;padding:6px}
+.engine-menu button{display:flex;align-items:center;gap:10px;padding:8px 10px;font-size:13px}
+.engine-menu .engine-ico{width:16px;height:16px}
+.engine-menu .engine-name{padding-left:0;color:var(--ink)}
+.engine-menu button:hover .engine-name{color:var(--accent)}
+
+/* ---- 品牌图标：遮罩染色，跟随文字颜色（含明暗自适应） ---- */
+/* 用 PNG 的透明通道做 mask，底色取 currentColor —— 文字变白它就变白 */
+.brand-mark{
+  display:block;flex:none;width:28px;height:28px;
+  background-color:currentColor;
+  -webkit-mask-image:url("/assets/brand-home.png?v=5ae3b878");
+  -webkit-mask-repeat:no-repeat;-webkit-mask-position:center;-webkit-mask-size:contain;
+  mask-image:url("/assets/brand-home.png?v=5ae3b878");
+  mask-repeat:no-repeat;mask-position:center;mask-size:contain;
+  filter:drop-shadow(0 1px 6px rgba(255,255,255,.5))
+}
+:root.dark .brand-mark{filter:drop-shadow(0 1px 6px rgba(0,0,0,.55))}
+:root:not(.dark).wp-top-dark .brand-mark{filter:drop-shadow(0 1px 7px rgba(6,10,14,.45))}
+:root:not(.dark).wp-top-light .brand-mark{filter:drop-shadow(0 1px 2px rgba(255,255,255,.6))}
+
+/* ---- 内容整体上提：问候区原本偏下（上方留白 174px、下方只剩 45px）----
+   缩小 workspace 顶部留白，整块内容（问候区 + 搜索框 + 双卡片）一起上移，
+   三者之间的相对节奏保持不变 —— 搜索框与卡片跟随问候区同步上提 */
+@media(min-width:701px){
+  .workspace{margin-top:clamp(26px,6.5vh,84px)}
+}
+
+/* ---- 三个白框背景再透一点点 ----
+   --surface 为搜索框与两张卡片共用，这里只收这两类元素的填充：.78 -> .70，
+   边框 / 阴影 / 毛玻璃模糊全部保持原值。
+   卡片内的「来源」小胶囊不跟着变，在更透的卡片上留一点轻微浮起。 */
+.search-panel,.surface{background:rgba(249,251,252,.7)}
+:root.dark .search-panel,:root.dark .surface{background:rgba(22,30,37,.7)}
+
+/* ---- 卡片头操作按钮统一：清空（.text-button）/ 知乎（.source-switch）----
+   去掉 .source-switch 的药丸外壳（1px 边框 + 999px 圆角 + 填充），
+   两者收敛为同一套「无壳纯文字按钮」：同字号 / 同字体 / 同色阶 / 同 hover 反馈。
+   图标（切换箭头）保留，仍跟随 currentColor 与字色同步。 */
+.text-button,.source-switch{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:2px 0;border:0;border-radius:0;background:transparent;
+  font-family:inherit;font-size:12px;font-weight:400;letter-spacing:0;line-height:1.4;
+  color:var(--muted);cursor:pointer;
+  transition:color 160ms var(--ease)}
+.text-button:hover,.source-switch:hover{
+  color:var(--accent);background:transparent;border-color:transparent;outline:0}
+/* 键盘焦点用文字下划线提示，不加壳、不画方框，保持无壳观感同时不丢可达性 */
+.text-button:focus-visible,.source-switch:focus-visible{
+  color:var(--accent);background:transparent;border-color:transparent;outline:0;
+  text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.source-switch svg{width:13px;height:13px;flex:none}
+/* 清空按钮前缀 × ：与文字同色，线宽略重一点，14px 视觉重量与左侧箭头图标对齐 */
+.text-button svg{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;
+  stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+/* ---- 去掉文字发光 ----
+   原 --halo 以及 wp-top-* / wp-bottom-* 分支给大标题、日期行、底栏叠了大范围模糊阴影
+   （浅色壁纸下是一圈白雾，深色壁纸下是一圈黑雾）。这里全部关掉：
+   可读性改由字色本身的明暗对比承担，不再给任何文字加光晕。
+   品牌图标原来的 drop-shadow 同属字晕，一并去掉。 */
+.hero-block h1,.eyebrow,.hero-meta,.brand,.bottom-bar,
+.brand-copy,.brand-copy small,#wallpaperCaption,.wallpaper-info,
+:root:not(.dark).wp-top-dark .hero-block h1,
+:root:not(.dark).wp-top-light .hero-block h1,
+:root:not(.dark).wp-top-dark .brand,
+:root:not(.dark).wp-bottom-dark .bottom-bar,
+:root:not(.dark).wp-bottom-light .bottom-bar,
+:root.dark .bottom-bar{text-shadow:none}
+.brand-mark,:root.dark .brand-mark,
+:root:not(.dark).wp-top-dark .brand-mark,
+:root:not(.dark).wp-top-light .brand-mark{filter:none}
+
+/* ---- 问候区重构：把「时间」扶正为主角，汉字退回标签位 ----
+   原来全页最重的一块是 72px 的汉字「晚上好。」—— 汉字笔画密度高，放大只会越放越笨重，
+   这就是「拐角硬、笔画粗、呆板」的来源。数字和拉丁字母放大才是舒展的，所以：
+     ① 小标签行：日期 · 问候（11px，汉字只在这一层出现）
+     ② 主角：超大号细笔画时间，等宽数字保证分钟跳动时宽度不抖
+     ③ 一行极浅的每日短句，给 hero 留呼吸位
+   高度按原结构配平（约 94px），下方的搜索框与卡片不会被推移。 */
+.hero-block h1{
+  margin:10px 0 5px;
+  font-size:clamp(52px,8.2vw,94px);
+  font-weight:300;
+  letter-spacing:-.025em;
+  line-height:.85;
+  font-variant-numeric:tabular-nums;
+  font-feature-settings:'tnum' 1}
+/* 小标签行：日期与问候并排，字重略提以撑住 11px 的清晰度 */
+.eyebrow{gap:9px}
+.eyebrow #greeting{font-weight:500}
+/* 时间与天气之间那根 28px 横线破坏呼吸感 —— 降级成一个小圆点，颜色沿用各明暗分支 */
+.meta-divider{width:3px;height:3px;border-radius:50%}
+/* 天气线性图标：跟随字色，与文字同一视觉重量 */
+.hero-meta{gap:9px}
+.weather-ico{display:inline-flex;align-items:center;justify-content:center;flex:none;width:15px;height:15px}
+.weather-ico svg{display:block;width:15px;height:15px;fill:none;stroke:currentColor;
+  stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+/* 每日短句：整块 hero 里最浅的一层 */
+.hero-note{color:var(--faint)}
+:root:not(.dark).wp-top-dark .hero-note{color:rgba(255,255,255,.55)}
+:root:not(.dark).wp-top-light .hero-note{color:#8b969f}
+/* 手机端：原规则把 h1 压到 48px，主角感会丢，按视口宽度重设 */
+@media(max-width:700px){
+  .hero-block h1{font-size:clamp(46px,15vw,64px)}
+  /* 手机端去掉壁纸那 2% 缩放：整屏 fixed + transform 会把这层单独提升为合成层，
+     滚动中重新栅格化时会出现「跳一下 / 看着像放大」的观感；cover 本身已铺满，不需要这 2% */
+  .wallpaper{transform:none}
+}
+/* 大号细笔画用灰度平滑更干净（只作用于主角数字，11px 元信息不动，免得发虚） */
+.hero-block h1{-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+/* 浅色壁纸下原来的字色是接近纯黑的 #0f181f，落在灰蓝渐变上偏硬；
+   换成带一点蓝的深灰，细笔画 + 大字号撑得住对比度 */
+:root:not(.dark).wp-top-light .hero-block h1{color:#1b2731}
+/* 那个橙点原本带一圈 3px 光环，像颗没对齐的小徽章 —— 收成干净的小圆点 */
+.status-dot,
+:root:not(.dark).wp-top-dark .status-dot,
+:root:not(.dark).wp-top-light .status-dot{width:5px;height:5px;box-shadow:none}
+
+/* ---- 元信息放大 + 时间加回视觉锚点 ----
+   反馈：日期 / 问候 / 天气三行偏小，时间 300 太细、整块没有落点。
+   ① 标签行与天气行 11 / 12px -> 13px。它们是同一层「元信息」，一行只留一个字阶，
+      所以日期、问候、天气、每日短句一起放大，层级改由颜色和字重区分。
+   ② 同一行内拉开主次：日期 500、问候 600（汉字走系统字体的对应字重），
+      但两者都比 13px 的天气行更「轻」，避免小字抢大字的位。
+   ③ 时间 300 -> 500，跳过 400（94px 下 400 依然发虚）。字距同步收到 -.03em，
+      加粗后数字更紧实，锚点感来自「重量」而不是「模糊」。
+   ④ 高度配平：h1 上下外边距总量保持 11px 不变，只重新分配为 3 / 8
+      （理由见下面「上下留白配平」）。搜索框与双卡片位置不动。 */
+.eyebrow{font-size:13px}
+.eyebrow #dateLabel{font-weight:500}
+.eyebrow #greeting{font-weight:600}
+.hero-meta{font-size:13px;gap:10px}
+.hero-meta .weather-ico,
+.hero-meta .weather-ico svg{width:16px;height:16px}
+
+/* ---- 时间上下留白配平 ----
+   反馈「时间上下的空隙不一样，上面太宽、下面太窄」。根因是两件事叠加，不是 margin 写错：
+   ① 行盒偏心：line-height:.85 把 94px 的回车盒（Manrope 内容区 1.366em）压掉一半，
+      数字顶到行盒顶只剩 ~8.3px，底到行盒底只有 ~4.0px —— 负半行距天然把数字往上顶；
+   ② margin 又是 8 / 3。
+   二者叠加后，上方视觉留白 ~19.7px、下方 ~10.6px，差接近 9px。
+   修法只重分配、不加总量：margin 改 3 / 8（总量仍是 11px），抵掉 ① 的 4.3px 偏心，
+   最终上 ~14.7px、下 ~15.4px，差 0.7px。
+   （数值由 Manrope 字体度量算出：upem 2000 / ascent 2132 / descent 600 / cap 1440，
+   不是目测。） */
+.hero-block h1{margin:3px 0 8px;font-weight:500;letter-spacing:-.03em}
+
+/* ---- 主题按钮去掉外框 ----
+   原来 .icon-button 是 1px 实线边框 + hover 实心淡底，成了页面里最后一块「有壳」的按钮。
+   现在与卡片头的「清空 / 知乎」同一套语言：无边框、无底色，只有颜色变化。
+   尺寸 34×34 与 box-sizing:border-box 不变，所以去掉边框不会带动布局。
+   键盘焦点改用 outline —— 它只在 Tab 导航时出现，不会被误认成常驻边框。 */
+.icon-button{border:0;background:transparent}
+.icon-button:hover,.icon-button:focus-visible{background:transparent;transform:none}
+.icon-button:focus-visible{outline:1px solid var(--accent);outline-offset:4px}
+
+/* ---- 三行左缘压在同一条轴线上 ----
+   反馈「小字 / 大时间 / 天气三行的左边缘没吃在一条竖线上，2 凸出来、带橙点的小字缩进在里面」。
+   三处的偏移来源各不相同，逐个量过（数值都来自字体度量，不是目测）：
+
+   ① 大字时间 —— 偏差最大的一处。开了等宽数字（tabular-nums）以后，Manrope 为了让四个数字等宽，
+      把字形在字身里居中，左边距于是随首位数字变化：0 -> 186/2000em、1 -> 364/2000em、2 -> 166/2000em，
+      94px 下分别是 8.7 / 17.1 / 7.8px。用 margin-left 把首位数字的左边距抵消掉，字迹落回块左缘。
+      数值由 app.js 随时钟更新（CLOCK_LEAD），不补的话 09 点跳 10 点整块数字会横移 8.4px。
+
+   ② 小字行 —— 橙色圆点 5px + 与日期之间 9px 间距，把日期推到 14.7px，这才是「小字缩进在里面」。
+      把点与字的间距收到 4px、整行左移 9.7px，日期字迹回到轴线上；圆点随之悬挂进左边距
+      （报纸上「悬挂标点」的老做法，它仍紧贴日期，所以读起来还是一组）。
+      9.7 = 5（圆点）+ 4（点与字之间）+ 0.7（DM Mono「9」左边距 55/1000em @13px）
+
+   ③ 天气图标 —— 画在 24 格网格里，左侧天然留白 1.4~2.4px（各天气图标略有差异），取 -2px 抹平。 */
+.hero-block h1{margin-left:var(--clock-lead,-.083em)}
+.eyebrow{margin-left:-9.7px}
+.eyebrow .status-dot{margin-right:-5px}
+.hero-meta .weather-ico{margin-left:-2px}
+
+/* ---- 小标签行加字距 ----
+   反馈「顶栏小标字间距拉大一丁点」。它原来已经是 .04em（第 22 行那条统一字阶设的），
+   照建议改成 .05em 只差 0.13px/字，等于没改；这里给到 .07em（13px 下每字多 0.4px，整行宽约 +5px），
+   是「看得出、但不会变松」的量。字距只影响横向排布，不改变第一个字的起点，所以不会动上面那条轴线。 */
+.eyebrow{letter-spacing:.07em}
+
+/* ---- 天气行的辨识度 ----
+   反馈「🌙 晴 20℃ · ... 颜色过浅、字重太轻，落在偏灰的天色上看不清」。两件事分开处理：
+   ① 字重加半级，只给天气值本身，DM Mono 500 是自托管的真实字重、不是合成加粗。
+      整行加粗会让它和上面的日期行（500 / 600）抢层级，所以每日短句仍留在 400。
+      图标线宽同步 1.5 -> 1.7，否则文字变重之后图标会显得偏轻。
+   ② 字色提上来。对比度按最典型的天色 #b9c3ca 估（括注是改动前后）：
+      问题出在「浅底壁纸」这一支 —— 主色 3.11 -> 4.41、天气值 3.88 -> 4.78，
+      每日短句 1.68 -> 2.79（它是最浅的一层，不能提到与主色齐平，否则这行的层次就没了）。
+      亮底壁纸那支的白字透明度 .55 -> .68（5.3 -> 7.2）；深色主题下的短句 3.60 -> 4.99。
+      深色主题的主色本来就是 7.25，没动。 */
+.hero-meta #weatherText{font-weight:500}
+.hero-meta .weather-ico svg{stroke-width:1.7}
+:root:not(.dark).wp-top-light .hero-meta{color:#46535e}
+:root:not(.dark).wp-top-light #weatherText{color:#24506f}
+:root:not(.dark).wp-top-light .hero-note{color:#66717a}
+:root:not(.dark).wp-top-dark .hero-note{color:rgba(255,255,255,.68)}
+:root.dark .hero-note{color:#7d8892}
