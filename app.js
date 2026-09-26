@@ -578,13 +578,28 @@ function applyWallpaper(item) {
 }
 
 /* 采样壁纸顶部（问候区）与底部（页脚区）平均亮度，自动切换文字深浅
-   ⚠️ 三个必须遵守的前提（否则电脑/手机会判出完全相反的字色）：
-   ① 裁剪比例要用「当前视口的真实宽高比」。写死 16:9 时，竖屏手机会采到原图中间一条
-      横带，跟它实际看到的画面毫无关系。
+   ⚠️ 四个必须遵守的前提（否则电脑/手机会判出完全相反的字色）：
+   ① 采样坐标系必须与「壁纸层这个盒子」对齐，不是视口。壁纸层是
+      position:fixed + top:-140px + height:calc(100vh + 280px)，比视口高一截，
+      CSS 的 cover 是按这个盒子算的。以前这里拿视口宽高比去做 cover，两套坐标系
+      错开一百多像素 —— 问候区明明压在深蓝浪头上，却采到了旁边的米色亮区，
+      判成浅底，深色字直接看不见。
    ② 采样带位置要用「元素此刻在视口里的真实位置」。问候区在竖屏和横屏下位置差很多，
       写死百分比必然错配。
-   ③ 结果回来时要确认「还是当前这张图」。连点换一张 / 旋屏重采都会让两次采样并存，
-      迟到的旧结果会把新图的判定覆盖掉。 */
+   ③ 横向要收窄到「文字真正占据的那一段」。块级元素的 getBoundingClientRect 给的是
+      整栏容器宽度（撑满 1030px），得用 Range 量内容节点才拿得到文字的实际宽度。
+   ④ 结果回来时要确认「还是当前这张图」。连点换一张 / 旋屏重采都会让两次采样并存，
+      迟到的旧结果会把新图的判定覆盖掉。
+   ⑤ 判定看的是「亮像素占比」，不是平均值。照片里亮区往往比暗区亮得多（米色纸面
+      L≈220、深蓝 L≈70），平均值天然被拉向亮侧 —— 实测一块「47% 是暗块」的区域
+      平均亮度仍有 148，按平均值就会判成浅底、给深色字，而深色字压在那些暗块上是
+      **完全消失**。反过来，浅色字压在亮块上只是对比弱、仍可辨认，两者不是同等代价。
+      所以只有「亮区占绝对多数」才用深色字。 */
+
+/* 判定阈值：像素亮度 ≥ LIGHT_TONE 记作「亮」；窗口内亮像素占比 ≥ BRIGHT_ENOUGH
+   才认为背景足够亮、可以用深色字。 */
+const LIGHT_TONE = 132;
+const BRIGHT_ENOUGH = 0.75;
 let lastWallpaperUrl = '';
 let lastToneRatio = 0;
 function sampleWallpaperTone(url) {
@@ -598,8 +613,20 @@ function sampleWallpaperTone(url) {
     try {
       const vw = Math.max(1, window.innerWidth);
       const vh = Math.max(1, window.innerHeight);
+      /* 采样坐标系必须与「壁纸层这个盒子」对齐，而不是视口 —— 它是
+           position:fixed; top:-140px; height:calc(100vh + 280px); background-size:cover
+         比视口高一截，CSS 的 cover 是按它算的。以前这里拿视口宽高比去 cover，两套
+         坐标系错开一百多像素：问候区明明压在深蓝浪头上，却采到了旁边的米色亮区，
+         于是判成浅底、深色字直接看不见。
+         offsetWidth/offsetHeight 给的是布局尺寸，不受 transform:scale(1.02) 影响；
+         offsetTop/offsetLeft 同样不含 transform，正好用来还原这个盒子。 */
+      const wp = els.wallpaper;
+      const boxW = wp.offsetWidth || vw;
+      const boxH = wp.offsetHeight || vh;
+      const boxLeft = wp.offsetLeft;
+      const boxTop = wp.offsetTop;
       const CW = 72;
-      const CH = Math.max(8, Math.round((CW * vh) / vw));
+      const CH = Math.max(8, Math.round((CW * boxH) / boxW));
       const canvas = document.createElement('canvas');
       canvas.width = CW; canvas.height = CH;
       const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -609,30 +636,67 @@ function sampleWallpaperTone(url) {
       if (ratio > cover) { sh = image.height; sw = sh * cover; sx = (image.width - sw) / 2; sy = 0; }
       else { sw = image.width; sh = sw / cover; sx = 0; sy = (image.height - sh) / 2; }
       ctx.drawImage(image, sx, sy, sw, sh, 0, 0, CW, CH);
-      const luminance = (y0, y1) => {
+      /* 窗口内「亮像素是否占绝对多数」—— true = 浅底，用深色字。
+         窗口是归一化坐标，原点在壁纸层左上角。 */
+      const toneOf = (x0, x1, y0, y1) => {
+        const colA = Math.max(0, Math.min(CW - 1, Math.floor(x0 * CW)));
+        const colB = Math.max(colA + 1, Math.min(CW, Math.ceil(x1 * CW)));
         const rowA = Math.max(0, Math.min(CH - 1, Math.floor(y0 * CH)));
         const rowB = Math.max(rowA + 1, Math.min(CH, Math.ceil(y1 * CH)));
-        const data = ctx.getImageData(0, rowA, CW, rowB - rowA).data;
-        let sum = 0, n = 0;
-        for (let i = 0; i < data.length; i += 4) { sum += 0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2]; n += 1; }
-        return sum / n;
+        const data = ctx.getImageData(colA, rowA, colB - colA, rowB - rowA).data;
+        let bright = 0, n = 0;
+        for (let i = 0; i < data.length; i += 4) {
+          if (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2] >= LIGHT_TONE) bright += 1;
+          n += 1;
+        }
+        return n ? bright / n >= BRIGHT_ENOUGH : true;
       };
-      /* 元素位置 -> 视口归一化区间（含少量外扩，避免文字正好压在明暗交界上） */
-      const bandOf = (selector, pad, fallback) => {
-        const el = document.querySelector(selector);
-        if (!el) return fallback;
-        const r = el.getBoundingClientRect();
-        if (!(r.height > 0)) return fallback;
-        const t = Math.max(0, r.top / vh - pad);
-        const b = Math.min(1, r.bottom / vh + pad);
-        return b - t > 0.02 ? [t, b] : fallback;
+      /* 文字实际占据的矩形。块级元素的 getBoundingClientRect 给的是「整栏容器宽度」
+         （撑满 1030px），不是文字渲染出来的那一小截宽 —— 必须用 Range 罩住内容节点，
+         否则窗口根本没变窄，等于没修。 */
+      const textRect = (el) => {
+        try {
+          const range = document.createRange();
+          range.selectNodeContents(el);
+          const rect = range.getBoundingClientRect();
+          if (rect.width > 0 && rect.height > 0) return rect;
+        } catch { /* 下面退回元素自身矩形 */ }
+        return el.getBoundingClientRect();
       };
-      const top = luminance(...bandOf('.hero-block', 0.05, [0.14, 0.52]));
-      const bottom = luminance(...bandOf('.bottom-bar', 0.02, [0.6, 1]));
-      els.root.classList.toggle('wp-top-dark', top < 132);
-      els.root.classList.toggle('wp-top-light', top >= 132);
-      els.root.classList.toggle('wp-bottom-dark', bottom < 132);
-      els.root.classList.toggle('wp-bottom-light', bottom >= 132);
+      /* 一组元素的并集矩形（视口坐标） */
+      const unionRect = (selector, asText) => {
+        let left = Infinity, right = -Infinity, top = Infinity, bottom = -Infinity;
+        document.querySelectorAll(selector).forEach((el) => {
+          const rect = asText ? textRect(el) : el.getBoundingClientRect();
+          if (!(rect.width > 0) || !(rect.height > 0)) return;
+          left = Math.min(left, rect.left); right = Math.max(right, rect.right);
+          top = Math.min(top, rect.top); bottom = Math.max(bottom, rect.bottom);
+        });
+        return Number.isFinite(left) ? { left, right, top, bottom } : null;
+      };
+      /* 视口矩形 -> 壁纸层坐标系的归一化窗口 [x0, x1, y0, y1]（少量外扩 + clamp） */
+      const toWindow = (rect, padX, padY) => {
+        if (!rect) return [0, 1, 0, 1];
+        return [
+          Math.max(0, (rect.left - boxLeft) / boxW - padX),
+          Math.min(1, (rect.right - boxLeft) / boxW + padX),
+          Math.max(0, (rect.top - boxTop) / boxH - padY),
+          Math.min(1, (rect.bottom - boxTop) / boxH + padY),
+        ];
+      };
+      /* 问候区：横向只取三行文字真正压着的那一段，纵向覆盖整个问候区。
+         横向若按整栏取平均，文字旁边大片与它无关的明暗区会把判定带偏。 */
+      const topWindow = toWindow(
+        unionRect('.hero-block .eyebrow, .hero-block #clock, .hero-block .hero-meta', true)
+          || unionRect('.hero-block', false),
+        0.02, 0.05,
+      );
+      const topIsLight = toneOf(...topWindow);
+      const bottomIsLight = toneOf(...toWindow(unionRect('.bottom-bar', false), 0.01, 0.02));
+      els.root.classList.toggle('wp-top-dark', !topIsLight);
+      els.root.classList.toggle('wp-top-light', topIsLight);
+      els.root.classList.toggle('wp-bottom-dark', !bottomIsLight);
+      els.root.classList.toggle('wp-bottom-light', bottomIsLight);
       lastToneRatio = vw / vh;
     } catch { /* 画布被跨域污染时保持当前深浅，不做切换 */ }
   };
