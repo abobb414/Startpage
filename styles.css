@@ -287,3 +287,19 @@
 :root:not(.dark).wp-top-light .hero-note{color:#66717a}
 :root:not(.dark).wp-top-dark .hero-note{color:rgba(255,255,255,.68)}
 :root.dark .hero-note{color:#7d8892}
+
+/* ---- iOS Safari 底部工具栏适配（2026-09-26）----
+   症状：手机 Safari 里页面内容（尤其页脚）会钻进底部胶囊工具栏下方。
+   参照 weather.abobb.com 的成熟做法做两处加固：
+   ① app-shell 的最小高度补一行 100svh —— iOS 上 100vh 按工具栏收起后的
+      「大视口」算，工具栏展开时整页比可视区高出一截，页脚被压到可视区外；
+      svh 按当前实际可视高度算，前面的 100vh 行保留兜底旧浏览器。
+      （壁纸层维持 100vh 不动：它按大视口铺满，工具栏收起时底部才不会露空条。）
+   ② 手机端加大底部留白（22px -> 64px）：原 22px 那条规则在源码顺序上靠后，
+      同权重覆盖了基础媒体查询里的 96px，导致滚到最底时页脚正好卡进胶囊工具栏
+      的悬浮区；64px 与 AeroWeather 的移动端底距一致，滚到底页脚完整停在
+      工具栏上方。 */
+.app-shell{min-height:100vh;min-height:100svh}
+@media(max-width:700px){
+  .workspace{padding-bottom:64px}
+}
