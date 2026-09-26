@@ -11,8 +11,8 @@
 [![License](https://img.shields.io/badge/license-AGPL--3.0-3b82f6?style=flat-square)](./LICENSE)
 [![Build](https://img.shields.io/badge/build-none%20required-22c55e?style=flat-square)](#快速开始)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-22c55e?style=flat-square)](#技术栈)
-[![Size](https://img.shields.io/badge/HTML%2BCSS%2BJS-23%20KB%20gzip-0ea5e9?style=flat-square)](#性能)
-[![Tests](https://img.shields.io/badge/assertions-430%20passing-22c55e?style=flat-square)](#测试)
+[![Size](https://img.shields.io/badge/HTML%2BCSS%2BJS-25%20KB%20gzip-0ea5e9?style=flat-square)](#性能)
+[![Tests](https://img.shields.io/badge/assertions-493%20passing-22c55e?style=flat-square)](#测试)
 [![Vanilla JS](https://img.shields.io/badge/vanilla-JavaScript-f7df1e?style=flat-square)](#技术栈)
 
 </div>
@@ -74,7 +74,7 @@
 
 ## 工程笔记：那些踩过的坑
 
-这个项目 1121 行代码，但不少行数花在了**看起来不重要、实际会要命的地方**。以下每一条都是真实踩过的：
+这个项目 1175 行代码，但不少行数花在了**看起来不重要、实际会要命的地方**。以下每一条都是真实踩过的：
 
 <table>
 <tr><th width="30%">症状</th><th width="70%">根因与解法</th></tr>
@@ -99,8 +99,8 @@
 <td><code>picsum.photos</code> 会 302 到 <code>fastly.picsum.photos</code>，最终响应<b>没有 <code>access-control-allow-origin</code></b>（只有 <code>timing-allow-origin</code>），<code>crossOrigin</code> 加载失败 → canvas 取不到像素 → 字色僵在上一张判定上，暗图配深字直接看不见。<br/>解法：<code>isSampleable()</code> 门禁，只采用 <code>images.unsplash.com</code> 的图。</td>
 </tr>
 <tr>
-<td><b>竖屏手机上字色判反</b></td>
-<td>采样裁剪必须用<b>当前视口的真实宽高比</b>。写死 16:9 时，竖屏手机会采到原图中间一条横带，跟它实际看到的画面毫无关系。采样带的位置同理 —— 要用元素<b>此刻在视口里的真实位置</b>，不能写死百分比。</td>
+<td><b>问候区文字压在深色画面上，直接看不见</b></td>
+<td>「按壁纸明暗自动切字色」有三个连环坑，任一个都会把字色判反：<br/>① <b>坐标系</b> —— 必须对齐<b>壁纸层那个盒子</b>（<code>position:fixed; top:-140px; height:calc(100vh + 280px)</code>），不是视口。CSS 的 <code>cover</code> 是按这个盒子算的，拿视口宽高比去裁剪会横向错开一百多像素 —— 问候区明明压在深色浪头上，却采到了旁边的米色亮区。<br/>② <b>横向范围</b> —— 块级元素的 <code>getBoundingClientRect()</code> 给的是<b>整栏容器宽度</b>（撑满 1030px），必须用 <code>Range.selectNodeContents()</code> 量到文字<b>真正</b>占据的那一段。<br/>③ <b>判据</b> —— 看<b>亮像素占比</b>，不是平均亮度。照片里亮区比暗区亮得多（米色纸面 L≈220 vs 深蓝 L≈70），平均值天然偏向亮侧：实测一块「47% 是暗块」的区域平均亮度仍有 148，按平均值会判成浅底、给深色字，而深色字压在暗块上是<b>彻底消失</b>；反过来浅色字压在亮块上只是对比弱、仍可辨认 —— 两者代价不对等，所以只有亮区占绝对多数（≥75%）才用深色字。</td>
 </tr>
 <tr>
 <td><b>连点「换一张」后字色串了</b></td>
@@ -121,6 +121,14 @@
 <tr>
 <td><b>为 iOS 工具栏加的边缘晕影，最后整层删掉了</b></td>
 <td>曾用两个 <code>position: fixed</code> 的渐变层把滚到屏幕上 / 下边缘的文字压暗，好让 iOS 状态栏与底部胶囊的玻璃底下不那么清晰可读。问题是它<b>永远做不到「完全看不见」</b>：调轻了毫无作用，调重了就是两条灰带，反复调透明度与高度只是在两个坏结果之间来回。<br/>最终因为不再把 iOS Safari 当适配目标而<b>整层删除</b>（<code>index.html</code> 两个 div + 一个 CSS 分区）。删之前做过桌面 / 手机 × 浅色 / 深色 + <b>滚动到中段</b>的视觉回归 —— 上下边缘没有任何异常。</td>
+</tr>
+<tr>
+<td><b>测试里的「定位桩」根本没生效</b></td>
+<td><code>navigator.geolocation</code> 是定义在 <code>Navigator.prototype</code> 上的<b>访问器属性（只有 getter）</b>，非严格模式下写 <code>navigator.geolocation = {…}</code> <b>不报错、也不生效</b> —— 测试于是一直在调真实的系统定位服务：快的场景天气正常，慢的场景永远停在「天气加载中」。症状是「每轮失败的场景都不一样」，极容易被当成环境抖动、靠重跑掩盖过去。<br/>解法：一律用 <code>Object.defineProperty</code> 打桩（<code>navigator.permissions.query</code> 同样挂在 prototype 上，同理），并专门加一条断言检查「桩是否真的挂上了」。</td>
+</tr>
+<tr>
+<td><b>回归测试随机报「页面在断言前就崩了」</b></td>
+<td>测试跑在 <code>--virtual-time-budget</code> 下，而 Chrome 的虚拟时钟会把页面里的 <code>setInterval</code> 飞快烧完，预算一耗尽就立刻 dump DOM —— 但<b>外部 <code>&lt;script src&gt;</code> 的加载不归虚拟时钟管</b>，此时脚本很可能还没执行，抓到手的只是一份原始 HTML（时钟还是 <code>--:--</code>、热点还是骨架）。<br/>解法：测试台把 <code>seed.js</code> / <code>app.js</code> / <code>test.js</code> 与样式<b>内联</b>注入页面（解析到即执行，没有网络往返），预算从 20s 提到 60s。同时给结果节点加了「边跑边写」的<b>心跳</b> —— 现在中途被 dump 也能看到最后跑到哪个断言，而不是笼统一句「崩了」。</td>
 </tr>
 </table>
 
@@ -170,7 +178,7 @@ flowchart TD
 | | |
 |---|---|
 | 语言 | 原生 JavaScript（ES2020+）、现代 CSS（自定义属性 / `clamp()` / `:root` 状态类） |
-| 样式 | 单文件 `styles.css`，手工切分为 15 个编号分区 |
+| 样式 | 单文件 `styles.css`，手工切分为 14 个编号分区 |
 | 布局 | CSS Grid + 少量 Flex，响应式无断点式缩放 |
 | 字体 | 自托管 `woff2`（Manrope + DM Mono），无外部字体请求 |
 | 后端 | Cloudflare Worker + D1（独立项目） |
@@ -180,10 +188,10 @@ flowchart TD
 
 | 文件 | 原始 | gzip |
 |---|---:|---:|
-| `index.html` | 5,984 B | 2,159 B |
-| `styles.css` | 18,593 B | 6,269 B |
-| `app.js` | 41,222 B | 16,392 B |
-| **合计** | **65,799 B** | **23,844 B** |
+| `index.html` | 5,877 B | 2,159 B |
+| `styles.css` | 17,888 B | 5,969 B |
+| `app.js` | 45,406 B | 17,932 B |
+| **合计** | **69,171 B** | **26,060 B** |
 
 零个第三方 JS 依赖，零次构建步骤。首屏只需拉取 HTML + CSS + JS 三个文件，字体与引擎图标均为自托管静态资源。
 
@@ -206,7 +214,7 @@ python3 -m http.server 8080
 
 ## 测试
 
-配了一套无头 Chrome 的自动化回归，**9 个场景、430 条断言**，覆盖正常路径与各种故障路径：
+配了一套无头 Chrome 的自动化回归，**10 个场景、493 条断言**，覆盖正常路径与各种故障路径：
 
 | 场景 | 覆盖内容 |
 |---|---|
@@ -218,11 +226,12 @@ python3 -m http.server 8080
 | `interactive` | 主题切换、引擎切换、便签增删、热点换源、换壁纸 |
 | `wpfail` | 壁纸接口失败 → 本地精选池 |
 | `picfail` | 壁纸图加载失败 → 提示与重试 |
+| `assets` | 四条图标声明（ICO 七尺寸 / SVG / 1024 PNG / 180 主屏）与内容指纹 |
 | `search` | 回车搜索的跳转目标地址正确 |
 
 ```bash
 cd tests
-./run.sh                  # 跑全部 9 个场景
+./run.sh                  # 跑全部 10 个场景
 ./run.sh dirty offline    # 只跑指定场景
 ```
 
@@ -234,17 +243,18 @@ cd tests
 
 ```
 .
-├── index.html                  # 70 行，语义化标记
-├── styles.css                  # 252 行，15 个编号分区
-├── app.js                      # 799 行，13 个编号分区
+├── index.html                  # 68 行，语义化标记
+├── styles.css                  # 244 行，14 个编号分区
+├── app.js                      # 863 行，13 个编号分区
 ├── assets/
 │   ├── engines/                # 四家搜索引擎官方图标（+ SOURCES.txt 标注来源）
 │   ├── fonts/                  # 自托管 woff2（Manrope + DM Mono）
 │   └── brand-home.png
 ├── tests/                      # 无头浏览器回归测试台（详见 tests/README.md）
 ├── docs/                       # README 预览图
-├── favicon.svg / .png / .ico
-├── apple-touch-icon.png
+├── favicon.svg                 # 矢量（由 100px 位图分层重建，任意尺寸清晰）
+├── favicon.png / .ico          # 1024×1024 PNG + 16→256 七尺寸 ICO
+├── apple-touch-icon.png        # 180×180，iOS 主屏图标
 └── robots.txt
 ```
 
