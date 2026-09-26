@@ -100,6 +100,7 @@ PYEOF
 # ---------- 起服务 ----------
 "$PY" "$HERE/server.py" "$TMP" "$PORT" >/dev/null 2>&1 &
 SRV=$!
+
 trap 'kill $SRV 2>/dev/null' EXIT
 sleep 1.2
 curl -s -o /dev/null -w "测试服务 %{http_code}\n" "http://127.0.0.1:$PORT/index.html"
@@ -110,7 +111,11 @@ for c in "${CASES[@]}"; do
   EXTRA=()
   [ "$c" = "offline" ] && EXTRA=(--host-resolver-rules="MAP * ~NOTFOUND, EXCLUDE 127.0.0.1")
   DOM="/tmp/sp-dom-$c.html"
+  # 不要给 headless Chrome 指定全新的 --user-data-dir：在本机会让启动阶段直接挂住
+  # （连 about:blank 都不返回）。不指定时 Chrome 自建临时 profile，不会与用户
+  # 日常浏览器的默认 profile 冲突。
   "$CHROME" --headless=new --disable-gpu --no-sandbox --dump-dom \
+      --no-first-run --no-default-browser-check \
       --virtual-time-budget=20000 ${EXTRA[@]+"${EXTRA[@]}"} \
       "http://127.0.0.1:$PORT/index.html?case=$c" > "$DOM" 2>/dev/null
 

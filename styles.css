@@ -2,9 +2,9 @@
    Start / Daily Workspace — 样式表
    结构（自上而下）：
      1. 字体  2. 设计变量  3. 基础  4. 外框与层级  5. 壁纸层
-     6. 顶栏  7. 主区与问候  8. 搜索  9. 卡片  10. 页脚  11. 边缘晕影
-     12. 壁纸明暗自适应  13. 品牌图标  14. 动效  15. 响应式
-   层级约定：背景/壁纸 0 → 内容区块 1 → 边缘晕影 4 → 搜索面板 5 → 引擎菜单 20。
+     6. 顶栏  7. 主区与问候  8. 搜索  9. 卡片  10. 页脚
+     11. 壁纸明暗自适应  12. 品牌图标  13. 动效  14. 响应式
+   层级约定：背景/壁纸 0 → 内容区块 1 → 搜索面板 5 → 引擎菜单 20。
    所有内容区块（含页脚）必须 position:relative + z-index:1，否则会被 fixed 壁纸压住。
    ========================================================================== */
 
@@ -172,15 +172,7 @@ button,input{font:inherit;color:inherit}
 :root.dark .bottom-bar a#wallpaperCaption[href]:hover,
 :root.dark .bottom-bar a#wallpaperCaption[href]:focus-visible{color:#ffd9a0}
 
-/* ---------- 11. 边缘晕影 ----------
-   极轻的暗色晕影，盖在内容之上（z-index:4）、搜索面板之下。照片边缘变暗看起来
-   像自然暗角，几不可见；作用是把滚到屏幕上/下边缘的文字压暗，让 iOS 状态栏与
-   底部胶囊玻璃底下不再清晰可读（暗色模式靠 wash 自带的暗渐变天然有此效果）。 */
-.edge-fade{position:fixed;left:0;right:0;z-index:4;pointer-events:none}
-.edge-fade-top{top:0;height:44px;background:linear-gradient(180deg,rgba(10,14,18,.15),rgba(10,14,18,0))}
-.edge-fade-bottom{bottom:0;height:40px;background:linear-gradient(0deg,rgba(10,14,18,.15),rgba(10,14,18,0))}
-
-/* ---------- 12. 壁纸明暗自适应 ----------
+/* ---------- 11. 壁纸明暗自适应 ----------
    app.js 采样壁纸在问候区/页脚所在条带的亮度，给 <html> 挂 wp-top-* / wp-bottom-*。
    默认按浅底初始化；采样到深色背景则切亮字。所有分支都不加文字光晕
    （大范围模糊阴影在浅底壁纸上是白雾、深底上是黑雾，可读性交给字色对比）。 */
@@ -221,17 +213,17 @@ button,input{font:inherit;color:inherit}
 :root:not(.dark).wp-top-dark .weather-link:focus-visible #weatherText,
 :root.dark .weather-link:focus-visible #weatherText{color:var(--accent)}
 
-/* ---------- 13. 品牌图标：PNG 透明通道做 mask，跟随 currentColor（字色变它跟着变） ---------- */
+/* ---------- 12. 品牌图标：PNG 透明通道做 mask，跟随 currentColor（字色变它跟着变） ---------- */
 .brand-mark{display:block;flex:none;width:28px;height:28px;background-color:currentColor;-webkit-mask:url("/assets/brand-home.png?v=5ae3b878") no-repeat center/contain;mask:url("/assets/brand-home.png?v=5ae3b878") no-repeat center/contain}
 
-/* ---------- 14. 动效 ---------- */
+/* ---------- 13. 动效 ---------- */
 @keyframes row-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
 @keyframes switch-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
 
-/* ---------- 15. 响应式 ---------- */
+/* ---------- 14. 响应式 ---------- */
 @media(min-width:701px){
   .workspace{margin-top:clamp(26px,6.5vh,84px)}
 }
