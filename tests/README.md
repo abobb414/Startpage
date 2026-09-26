@@ -3,7 +3,7 @@
 无头 Chrome 驱动的自动化回归，覆盖起始页的正常路径与故障路径。
 
 ```bash
-./run.sh                 # 跑全部 9 个场景
+./run.sh                 # 跑全部 10 个场景
 ./run.sh dirty offline   # 只跑指定场景
 ```
 
@@ -16,17 +16,22 @@
 
 ```
 临时目录 /tmp/sp-tests/
-├── index.html      ← 从被测源码复制，并注入下面两个脚本
-├── styles.css
-├── app.js
-├── assets/
+├── index.html      ← 从被测源码复制，并把样式与三个脚本全部【内联】进去
+├── favicon.* / apple-touch-icon.png   ← assets 场景核对引用用
+├── assets/         ← 字体与搜索引擎图标
 ├── img/            ← 现生成的纯黑 / 纯白 PNG，用来验证壁纸明暗采样
-├── seed.js         ← 插在 app.js 之前：打桩 fetch / JSONP / 播种 localStorage
-└── test.js         ← 插在 app.js 之后：跑断言集，结果写进 DOM
+├── seed.js         ← 排在 app.js 之前：打桩 fetch / JSONP / 播种 localStorage
+└── test.js         ← 排在 app.js 之后：跑断言集，结果写进 DOM 供 dump
 ```
 
+> 🔴 **必须内联，不能写成 `<script src="/app.js">`。** 测试跑在 `--virtual-time-budget` 下，
+> 而 Chrome 的虚拟时钟**不把外部脚本的加载算作 pending 任务**：预算一耗尽就 dump DOM，
+> 此时脚本可能还没执行，抓回来的只是一份原始 HTML（时钟还是 `--:--`、热点还是骨架），
+> 表现为随机报「页面在断言前就崩了」、且每轮失败的场景都不一样。
+
 `report.py` 再从 `--dump-dom` 的输出里把断言结果抓出来（页面的错误信息本身就构成了断言，
-不依赖任何测试框架），全部通过时退出码为 0。
+不依赖任何测试框架），全部通过时退出码为 0。`test.js` 是**边跑边写**结果的（心跳），
+所以即使页面在中途被 dump，也能看到最后跑到哪个断言、卡在哪一步。
 
 ## 场景
 
@@ -40,6 +45,7 @@
 | `interactive` | 主题切换、引擎切换、便签增删、热点换源、换壁纸 |
 | `wpfail` | 壁纸接口失败 → 本地精选池 |
 | `picfail` | 壁纸图加载失败 → 提示与重试 |
+| `assets` | 四条图标声明（ICO 七尺寸 / SVG / 1024 PNG / 180 主屏）与内容指纹 |
 | `search` | 回车搜索的跳转目标地址正确 |
 
 ## 为什么值得写这套东西
@@ -58,3 +64,16 @@
   改为从 `document.head.appendChild` 拦截 script 标签
 - **别让测试和应用抢同一张图**：应用自己也在采样壁纸，断言前要先等它落定
 - **降级池指向真实 CDN 时不要太早断言**：`virtual-time-budget` 下不保证加载完，要轮询等待
+- 🔴 **`navigator.geolocation = {…}` 是静默失败的**：它是 `Navigator.prototype` 上的
+  访问器属性（只有 getter），非严格模式下赋值不报错也不生效 —— 测试一直在调真实定位服务，
+  快的场景天气正常、慢的场景停在「天气加载中」，表现为每轮失败场景都不同。必须用
+  `Object.defineProperty` 打桩；`navigator.permissions.query` 同理。已经加了一条断言
+  专门检查「桩是否真的挂上了」。
+- 🔴 **别在跑测试的同时并发做别的事**（尤其开别的 Chrome、批量处理图片）：抢 CPU 会把
+  `--virtual-time-budget` 的推进拖慢，随机出现「页面在断言前就崩了」。这不是代码问题，
+  是环境问题 —— 先独占重跑，别急着改代码。
+- 🔴 **`re.subn` 的替换串里反斜杠有转义含义**：内联注入时要把 `</script` 转义成 `<\/script`，
+  这个字符串作为**替换串**传给 `re.subn` 会触发 `bad escape \/` 报错。用 lambda 形式的
+  替换回调（返回值不做转义处理）就没事。
+- **内联后 DOM 里带着 test.js 的源码**：`report.py` 找结果标记时不能只取第一处匹配
+  （源码里的模板字面量会先命中），要逐个尝试、取真正能解析成结果对象的那一处。

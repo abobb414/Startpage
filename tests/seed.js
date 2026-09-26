@@ -57,6 +57,8 @@
     search: {},
     // 接口返回第三方图床（采不了样），验证前端会拒收并改用 Unsplash 池
     picfail: {},
+    // 图标 / 资源引用核对（纯 DOM 断言，不碰网络）
+    assets: {},
   };
 
   const seed = SEEDS[CASE] || {};
@@ -157,16 +159,29 @@
   if (CASE === 'geo') {
     // 保留真实 API，用于验证定位拒绝后的降级
   } else {
-    navigator.geolocation = {
+    /* ⚠️ 必须用 defineProperty 覆盖，不能写成 navigator.geolocation = {...}：
+       geolocation 是定义在 Navigator.prototype 上的访问器属性（只有 getter），
+       非严格模式下给它赋值**不会报错、也不会生效**，于是测试里一直在调真实的系统
+       定位服务。真实定位在无头浏览器下时快时慢：快的场景天气正常，慢的场景天气
+       一直停在「天气加载中」—— 这就是天气那 3 条断言随机失败、且每轮失败的场景都
+       不一样的根因（实测：赋值后 getCurrentPosition 仍是原函数，defineProperty 才换掉）。 */
+    const stubGeo = {
       getCurrentPosition: (ok, err) => setTimeout(() => err(new Error('denied in tests')), 0),
     };
-    /* permissions.query 是真实异步 API，不受虚拟时钟管辖：--virtual-time-budget 会在它返回
-       之前就把页面 dump 出来，表现为 offline 用例偶发「没拿到结果」或天气停在「加载中」。
+    try {
+      Object.defineProperty(navigator, 'geolocation', { value: stubGeo, configurable: true, writable: true });
+    } catch { navigator.geolocation = stubGeo; }
+
+    /* permissions.query 同理（也挂在 Permissions.prototype 上）：它是真实异步 API，
+       不受虚拟时钟管辖，--virtual-time-budget 会在它返回之前就把页面 dump 出来。
        它只用来快速判断「是否已被拒绝」，桩掉不影响被测逻辑。 */
     if (navigator.permissions && typeof navigator.permissions.query === 'function') {
       const realQuery = navigator.permissions.query.bind(navigator.permissions);
-      navigator.permissions.query = (desc) =>
+      const stubQuery = (desc) =>
         (desc && desc.name === 'geolocation' ? Promise.resolve({ state: 'prompt' }) : realQuery(desc));
+      try {
+        Object.defineProperty(navigator.permissions, 'query', { value: stubQuery, configurable: true, writable: true });
+      } catch { navigator.permissions.query = stubQuery; }
     }
   }
 })();

@@ -14,8 +14,33 @@
   window.__T.ready = true;
 
   const T_R = [];
-  const T_ok = (name, pass, extra) => T_R.push({ name, pass: !!pass, extra: extra == null ? '' : String(extra) });
-  const T_section = (name) => T_R.push({ section: name });
+  let T_stage = '启动';
+
+  /* 结果节点从第一行就建好、边跑边写（partial 心跳）。
+     背景：这个测试跑在 --virtual-time-budget 下，偶尔会在断言跑完之前页面就被 dump，
+     以前只能看到「没拿到结果 —— 页面在断言前就崩了」，完全不知道卡在哪一步，
+     于是「环境抖动」和「真 bug」长得一模一样。现在中途被 dump 也能看到
+     最后完成到哪个 section、已经跑过哪些断言。 */
+  const T_out = document.createElement('pre');
+  T_out.id = '__results';
+  document.body.appendChild(T_out);
+  /* 标记用拼接构造：run.sh 会把 test.js **内联**进页面，DOM 里因此带着本文件的源码。
+     如果这里写成完整字面量，report.py 的标记正则会先命中源码里的那一处。 */
+  const T_MARK_A = '__TESTS' + '_START__';
+  const T_MARK_B = '__TESTS' + '_END__';
+  const T_flush = (partial = true) => {
+    const T_failed = T_R.filter((r) => r.pass === false).length;
+    const T_done = T_R.filter((r) => r.pass !== undefined).length;
+    T_out.textContent = `${T_MARK_A}${JSON.stringify({
+      case: CASE, total: T_done, failed: T_failed, partial, stage: T_stage, results: T_R,
+    })}${T_MARK_B}`;
+  };
+  const T_ok = (name, pass, extra) => {
+    T_R.push({ name, pass: !!pass, extra: extra == null ? '' : String(extra) });
+    T_flush();
+  };
+  const T_section = (name) => { T_stage = name; T_R.push({ section: name }); T_flush(); };
+  T_flush();
   const T_sleep = (ms) => new Promise((T_r) => setTimeout(T_r, ms));
   const T_poll = async (fn, ms = 3000) => {
     const T_t0 = Date.now();
@@ -26,8 +51,9 @@
 
   // 页面级未捕获错误也收进结果里 —— 否则「跑到一半崩了」和「断言失败」看起来一样
   const T_errors = [];
-  window.addEventListener('error', (e) => T_errors.push(`error: ${e.message || e}`));
-  window.addEventListener('unhandledrejection', (e) => T_errors.push(`rejection: ${(e.reason && e.reason.message) || e.reason}`));
+  const T_note = (msg) => { T_errors.push(msg); T_R.push({ name: '页面不应有未捕获错误', pass: false, extra: msg }); T_flush(); };
+  window.addEventListener('error', (e) => T_note(`error: ${e.message || e}`));
+  window.addEventListener('unhandledrejection', (e) => T_note(`rejection: ${(e.reason && e.reason.message) || e.reason}`));
 
   await T_sleep(700); // 等 app 初始化的异步任务收敛
 
@@ -197,6 +223,12 @@
 
   /* ---------------- 6. 天气 ---------------- */
   T_section('天气');
+  /* 先确认桩真的挂上了：navigator.geolocation 是原型上的 getter-only 属性，
+     用 `navigator.geolocation = {...}` 打桩会静默失败，测试就会去调真实定位服务，
+     天气用例因此随机停在「天气加载中」。这条断言让「桩失效」变成一眼可见的失败。 */
+  T_ok('定位桩已生效（赋值式打桩会静默失败）',
+    /denied in tests/.test(String(navigator.geolocation.getCurrentPosition)),
+    String(navigator.geolocation.getCurrentPosition).slice(0, 70));
   if (CASE === 'offline') {
     T_ok('取不到天气时文案降级且图标清空',
       els.weatherText.textContent === '天气未连接' && els.weatherIcon.innerHTML === '',
@@ -399,7 +431,34 @@
       els.wallpaper.style.backgroundImage.includes('url('), els.wallpaper.style.backgroundImage);
   }
 
-  /* ---------------- 10. 场景：回车搜索（靠导航后的回显页断言） ---------------- */
+  /* ---------------- 10. 场景：图标 / 资源引用 ----------------
+     只做 DOM 断言、不碰网络：这里回答的是「声明写对了没」，
+     资源本身是否 200 由部署流程的 curl 核对负责，两边分工不重叠。 */
+  if (CASE === 'assets') {
+    T_section('图标引用');
+    const T_icons = [...document.querySelectorAll('link[rel*="icon"]')];
+    const T_byHref = (needle) => T_icons.find((l) => (l.getAttribute('href') || '').includes(needle));
+    T_ok('head 里有 4 条图标声明', T_icons.length === 4,
+      T_icons.map((l) => l.getAttribute('href')).join(' | '));
+    const T_ico = T_byHref('favicon.ico');
+    T_ok('favicon.ico 覆盖 16 到 256 共七个尺寸',
+      !!T_ico && /(^|\s)16x16(\s|$)/.test(T_ico.sizes.value) && /(^|\s)256x256(\s|$)/.test(T_ico.sizes.value),
+      T_ico ? T_ico.sizes.value : '缺 favicon.ico');
+    const T_svg = T_byHref('favicon.svg');
+    T_ok('favicon.svg 声明为 image/svg+xml', !!T_svg && T_svg.type === 'image/svg+xml',
+      T_svg ? T_svg.type : '缺 favicon.svg');
+    const T_png = T_byHref('favicon.png');
+    T_ok('favicon.png 声明 1024x1024（尽可能大的位图兜底）',
+      !!T_png && T_png.sizes.value === '1024x1024', T_png ? T_png.sizes.value : '缺 favicon.png');
+    const T_touch = T_byHref('apple-touch-icon.png');
+    T_ok('apple-touch-icon 声明 180x180', !!T_touch && T_touch.sizes.value === '180x180',
+      T_touch ? T_touch.sizes.value : '缺 apple-touch-icon');
+    T_ok('每个图标 URL 都带内容指纹 ?v=',
+      T_icons.length > 0 && T_icons.every((l) => /\?v=[0-9a-f]{8}$/.test(l.getAttribute('href') || '')),
+      T_icons.map((l) => l.getAttribute('href')).join(' | '));
+  }
+
+  /* ---------------- 11. 场景：回车搜索（靠导航后的回显页断言） ---------------- */
   if (CASE === 'search') {
     T_section('回车搜索');
     engines.baidu = `${location.origin}/__search__?q=`;
@@ -414,11 +473,6 @@
   } catch (T_crash) {
     T_R.push({ name: '测试过程中不应出现未捕获异常', pass: false, extra: String(T_crash && T_crash.message || T_crash) });
   }
-  T_errors.forEach((T_e) => T_R.push({ name: '页面不应有未捕获错误', pass: false, extra: T_e }));
-  const T_fail = T_R.filter((r) => r.pass === false).length;
-  const T_total = T_R.filter((r) => r.pass !== undefined).length;
-  const T_out = document.createElement('pre');
-  T_out.id = '__results';
-  T_out.textContent = `__TESTS_START__${JSON.stringify({ case: CASE, total: T_total, failed: T_fail, results: T_R })}__TESTS_END__`;
-  document.body.appendChild(T_out);
+  // 页面级错误已经由 T_note 即时记进 T_R（见上方监听器），这里不再重复收集
+  T_flush(false);   // partial=false：测试正常跑到了汇总阶段
 })();
