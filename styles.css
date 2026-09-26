@@ -124,7 +124,9 @@ button,input{font:inherit;color:inherit}
 .text-button:focus-visible,.source-switch:focus-visible{color:var(--accent);outline:0;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
 .text-button svg{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .source-switch svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
-.source-switch[data-busy=true] svg{animation:switch-spin 900ms linear infinite}
+/* 忙碌反馈只做静态弱化，不旋转 —— 箭头在文字旁边转个不停比加载本身更吵。
+   文案在切换时已经变了（知乎 → 掘金），那就是足够的「有反应了」。 */
+.source-switch[data-busy=true]{opacity:.5;cursor:default}
 
 .note-form{display:flex;margin-top:29px;border-bottom:1px solid var(--line-strong)}
 .note-form input{flex:1;min-width:0;padding:9px 0;border:0;outline:0;background:transparent;font-size:13px}
@@ -218,7 +220,6 @@ button,input{font:inherit;color:inherit}
 
 /* ---------- 13. 动效 ---------- */
 @keyframes row-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
-@keyframes switch-spin{to{transform:rotate(360deg)}}
 @media(prefers-reduced-motion:reduce){
   *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
 }
