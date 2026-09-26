@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Start" />
+    <meta name="theme-color" content="#ffffff" />
+    <link rel="icon" href="/favicon.ico?v=19860124" sizes="16x16 32x32 48x48" />
+    <link rel="icon" href="/favicon.svg?v=0f1eab87" type="image/svg+xml" />
+    <link rel="icon" href="/favicon.png?v=0ac7c787" type="image/png" sizes="480x480" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png?v=e6ca543b" sizes="180x180" />
+    <link rel="stylesheet" href="/styles.css?v=052bff21" />
+    <title>Start / Daily Workspace</title>
+  </head>
+  <body>
+    <div class="app-shell" id="app">
+      <div class="wallpaper" id="wallpaper" aria-hidden="true"></div>
+      <div class="wallpaper-wash" aria-hidden="true"></div>
+
+      <header class="topbar">
+        <a class="brand" href="/" aria-label="Start 首页">
+          <span class="brand-mark" aria-hidden="true"></span>
+          <span class="brand-copy"><strong>Start</strong><small>daily workspace</small></span>
+        </a>
+        <div class="topbar-actions">
+          <button class="icon-button" id="themeToggle" type="button" aria-label="切换主题" title="切换主题">
+            <svg class="morph-icon" viewBox="0 0 24 24" aria-hidden="true"><path class="icon-sun" d="M12 3v2m0 14v2M3 12h2m14 0h2M5.64 5.64l1.42 1.42m9.9 9.9 1.42 1.42m0-12.74-1.42 1.42m-9.9 9.9-1.42 1.42M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8Z"/><path class="icon-moon" d="M19 14.8A7.6 7.6 0 0 1 9.2 5a7.7 7.7 0 1 0 9.8 9.8Z"/></svg>
+          </button>
+        </div>
+      </header>
+
+      <main class="workspace">
+        <section class="hero-block" aria-labelledby="clock">
+          <p class="eyebrow"><span class="status-dot"></span><span id="dateLabel">今天</span><span class="meta-divider"></span><span id="greeting">晚上好</span></p>
+          <h1 id="clock">--:--</h1>
+          <div class="hero-meta"><span class="weather-ico" id="weatherIcon" aria-hidden="true"></span><a class="weather-link" href="https://weather.abobb.com" target="_blank" rel="noopener" title="打开 AeroWeather 天气页"><span id="weatherText">天气加载中</span></a><span class="meta-divider"></span><span class="hero-note" id="heroNote"></span></div>
+        </section>
+
+        <section class="search-panel" aria-label="搜索">
+          <svg class="search-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.8" cy="10.8" r="6.6"></circle><path d="m16 16 4.3 4.3"></path></svg>
+          <input id="searchInput" type="search" autocomplete="off" placeholder="搜索网页、问题或灵感" />
+          <button class="search-engine" id="engineToggle" type="button"><span class="engine-ico"><img src="/assets/engines/google.svg?v=ed9087d7" alt="" /></span><span class="engine-name">Google</span><span class="chev">⌄</span></button>
+          <div class="engine-menu" id="engineMenu" hidden><button type="button" data-engine="duckduckgo"><span class="engine-ico"><img src="/assets/engines/duckduckgo.png?v=a047a0e9" alt="" /></span><span class="engine-name">DuckDuckGo</span></button><button type="button" data-engine="bing"><span class="engine-ico"><img src="/assets/engines/bing.svg?v=a457db0f" alt="" /></span><span class="engine-name">Bing</span></button><button type="button" data-engine="google"><span class="engine-ico"><img src="/assets/engines/google.svg?v=ed9087d7" alt="" /></span><span class="engine-name">Google</span></button><button type="button" data-engine="baidu"><span class="engine-ico"><img src="/assets/engines/baidu.png?v=4999f55a" alt="" /></span><span class="engine-name">百度</span></button></div>
+        </section>
+
+        <section class="content-grid">
+          <article class="surface notes-surface">
+            <div class="surface-head"><div><span class="section-kicker">LOCAL / 01</span><h2>便签</h2></div><button class="text-button" id="clearNotes" type="button"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M6.5 6.5 17.5 17.5M17.5 6.5 6.5 17.5"/></svg>清空</button></div>
+            <form class="note-form" id="noteForm"><input id="noteInput" maxlength="80" placeholder="记下一件小事..." /><button type="submit" aria-label="添加便签">+</button></form>
+            <div class="notes-list" id="notesList"></div>
+            <p class="surface-foot">仅保存在这台设备 · <span id="noteCount">0</span> 条记录</p>
+          </article>
+
+          <article class="surface trends-surface">
+            <div class="surface-head"><div><span class="section-kicker">SIGNALS / 02</span><h2>今日热点</h2></div><button class="source-switch" id="sourceSwitch" type="button" title="切换热点来源" aria-label="切换热点来源"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9h13m0 0-3-3m3 3-3 3M20 15H7m0 0 3-3m-3 3 3 3"/></svg><span id="sourceSwitchLabel">知乎</span></button></div>
+            <div class="trend-list" id="trendList"><div class="loading-line"></div><div class="loading-line short"></div><div class="loading-line"></div></div>
+            <p class="surface-foot" id="trendCaption">来源：知乎 · 自动更新</p>
+          </article>
+        </section>
+      </main>
+
+      <footer class="bottom-bar"><a id="wallpaperCaption" class="wallpaper-info" href="https://unsplash.com/?utm_source=abobb_startpage&amp;utm_medium=referral" target="_blank" rel="noopener noreferrer">Unsplash · 每日一图</a><button class="wallpaper-info" id="wallpaperRefresh" type="button">换一张 <span>↗</span></button></footer>
+    </div>
+    <div class="edge-fade edge-fade-top" aria-hidden="true"></div>
+    <div class="edge-fade edge-fade-bottom" aria-hidden="true"></div>
+    <script src="/app.js?v=f3cfe4b0"></script>
+  </body>
+</html>

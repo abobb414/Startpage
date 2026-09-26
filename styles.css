@@ -1,0 +1,252 @@
+/* ==========================================================================
+   Start / Daily Workspace — 样式表
+   结构（自上而下）：
+     1. 字体  2. 设计变量  3. 基础  4. 外框与层级  5. 壁纸层
+     6. 顶栏  7. 主区与问候  8. 搜索  9. 卡片  10. 页脚  11. 边缘晕影
+     12. 壁纸明暗自适应  13. 品牌图标  14. 动效  15. 响应式
+   层级约定：背景/壁纸 0 → 内容区块 1 → 边缘晕影 4 → 搜索面板 5 → 引擎菜单 20。
+   所有内容区块（含页脚）必须 position:relative + z-index:1，否则会被 fixed 壁纸压住。
+   ========================================================================== */
+
+/* ---------- 1. 字体（本地自托管，避免国内手机加载不到 Google Fonts 而静默 fallback） ---------- */
+@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;font-display:swap;src:url('/assets/fonts/manrope-latin.woff2?v=e310b55a') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:400;font-display:swap;src:url('/assets/fonts/dm-mono-400.woff2?v=fd7521f3') format('woff2')}
+@font-face{font-family:'DM Mono';font-style:normal;font-weight:500;font-display:swap;src:url('/assets/fonts/dm-mono-500.woff2?v=0e263db5') format('woff2')}
+
+/* ---------- 2. 设计变量 ---------- */
+:root{
+  --bg:#f2f4f5; --ink:#17212b; --muted:#74808b; --faint:#aab4bd;
+  --line:rgba(23,33,43,.13); --line-strong:rgba(23,33,43,.23);
+  --surface:rgba(249,251,252,.95); --solid:#f9fbfc;
+  --accent:#3d718f; --accent-soft:rgba(61,113,143,.1);
+  --shadow:0 18px 60px rgba(25,43,58,.12);
+  --ease:cubic-bezier(.22,.61,.36,1);
+  --gutter:28px; --column:1030px;
+}
+:root.dark{
+  --bg:#11171d; --ink:#e7edf1; --muted:#99a6b0; --faint:#64717c;
+  --line:rgba(231,237,241,.13); --line-strong:rgba(231,237,241,.25);
+  --surface:rgba(22,30,37,.95); --solid:#182129;
+  --accent:#9ac5d7; --accent-soft:rgba(154,197,215,.12);
+  --shadow:0 18px 60px rgba(0,0,0,.28);
+}
+
+/* ---------- 3. 基础 ---------- */
+*{box-sizing:border-box}
+html,body{margin:0;min-width:320px;min-height:100%;font-family:Manrope,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+body{min-height:100vh}
+button,input{font:inherit;color:inherit}
+
+/* ---------- 4. 外框与层级 ----------
+   不用 100dvh/position:fixed 锁整页：整页自然滚动是本页手感的一部分。
+   min-height 补 100svh —— iOS 上 100vh 按工具栏收起后的「大视口」算，
+   工具栏展开时整页会高出一截、把页脚压到可视区外。 */
+.app-shell{position:relative;min-height:100vh;min-height:100svh;background:var(--bg)}
+.topbar,.workspace,.bottom-bar{position:relative;z-index:1}
+
+/* ---------- 5. 壁纸层 ----------
+   fixed 全屏层防 overscroll 露底（橡皮筋回弹露出的应是照片，不是页布底色）。
+   只锚定 top 一端 + 固定高度：双端锚定（top/bottom 同时设）会被 iOS 工具栏收展
+   时的视口变化拉伸，壁纸会跟着动。上下各外伸 140px 即为回弹留量。 */
+.wallpaper,.wallpaper-wash{position:fixed;top:-140px;left:0;right:0;width:100%;height:calc(100vh + 280px);pointer-events:none}
+.wallpaper{background:#d7e0e5 center/cover no-repeat;filter:saturate(.82);transform:scale(1.02);transition:background-image 600ms var(--ease)}
+.wallpaper-wash{background:transparent}
+:root.dark .wallpaper-wash{background:linear-gradient(180deg,rgba(9,13,17,.68),rgba(9,13,17,.78) 55%,rgba(9,13,17,.94))}
+
+/* ---------- 6. 顶栏 ---------- */
+.topbar{display:flex;align-items:center;justify-content:space-between;padding:27px clamp(22px,5vw,76px)}
+.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.brand-copy{display:flex;flex-direction:column;line-height:1.1}
+.brand-copy strong{font-size:14px;letter-spacing:.02em}
+.brand-copy small{margin-top:4px;color:var(--muted);font:10px 'DM Mono',monospace;letter-spacing:.04em}
+.topbar-actions{display:flex;align-items:center;gap:17px}
+.icon-button,.text-button,.wallpaper-info,.source-switch{border:0;background:transparent;cursor:pointer}
+.icon-button{width:34px;height:34px;display:grid;place-items:center;transition:color 180ms var(--ease)}
+.icon-button:hover,.icon-button:focus-visible{color:var(--accent);outline:0}
+.icon-button:focus-visible{outline:1px solid var(--accent);outline-offset:4px}
+.icon-button.small{width:29px;height:29px}
+.morph-icon{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.icon-sun,.icon-moon{transition:opacity 220ms var(--ease),transform 260ms var(--ease)}
+.icon-moon{opacity:0;transform:scale(.5) rotate(-20deg);transform-origin:center}
+.dark .icon-sun{opacity:0;transform:scale(.5) rotate(20deg)}
+.dark .icon-moon{opacity:1;transform:scale(1) rotate(0)}
+
+/* ---------- 7. 主区与问候 ----------
+   问候区的主角是「时间」：汉字只留在 13px 的标签行，大字号交给数字（笔画舒展）。
+   h1 的 margin-left 抵消等宽数字的首位左空（09→10 点整块数字会横移 8.4px），
+   偏移量由 app.js 随时钟写入 --clock-lead。 */
+.workspace{max-width:var(--column);margin:clamp(26px,6.5vh,84px) auto 0;padding:0 28px 28px}
+.hero-block{margin-bottom:45px}
+.eyebrow{display:flex;align-items:center;gap:9px;margin-left:-9.7px;color:var(--muted);font-size:13px;letter-spacing:.07em;line-height:1.45;text-transform:uppercase}
+.eyebrow #dateLabel{font-weight:500}
+.eyebrow #greeting{font-weight:600}
+.status-dot{width:5px;height:5px;margin-right:-5px;background:var(--accent);border-radius:50%}
+.hero-block h1{margin:3px 0 8px;margin-left:var(--clock-lead,-.083em);font-size:clamp(52px,8.2vw,94px);font-weight:500;letter-spacing:-.03em;line-height:.85;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+.hero-meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;letter-spacing:.04em;line-height:1.45}
+.hero-meta #clock{color:var(--ink);font-weight:500}
+.hero-meta #weatherText{font-weight:500}
+.hero-meta .weather-ico{width:16px;height:16px;margin-left:-2px}
+.meta-divider{width:3px;height:3px;background:var(--line-strong);border-radius:50%}
+.weather-ico{display:inline-flex;align-items:center;justify-content:center;flex:none}
+.weather-ico svg{display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.weather-link{color:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent}
+.hero-note{color:var(--faint)}
+
+/* ---------- 8. 搜索 ---------- */
+.search-panel{position:relative;z-index:5;display:flex;align-items:center;height:62px;padding:0 16px;border:1px solid var(--line-strong);background:var(--surface);box-shadow:var(--shadow);transition:border-color 180ms var(--ease),box-shadow 180ms var(--ease)}
+.search-panel:focus-within{border-color:var(--accent);box-shadow:0 15px 48px rgba(40,75,92,.16)}
+.search-icon{width:19px;height:19px;fill:none;stroke:var(--muted);stroke-width:1.5;stroke-linecap:round}
+.search-panel input{flex:1;min-width:0;padding:0 14px;border:0;outline:0;background:transparent;font-size:13px}
+.search-panel input::placeholder{color:var(--faint)}
+.search-engine{position:relative;display:inline-flex;align-items:center;gap:8px;padding:8px 4px 8px 16px;border:0;border-left:1px solid var(--line);background:transparent;color:var(--muted);font:11px 'DM Mono',monospace;letter-spacing:.04em;cursor:pointer}
+.search-engine .engine-name{color:var(--muted)}
+.search-engine .chev{color:var(--faint);font-size:10px;line-height:1}
+.search-engine:hover .engine-name,.search-engine:hover .chev{color:var(--accent)}
+.engine-ico{display:inline-flex;align-items:center;justify-content:center;flex:none;width:15px;height:15px}
+.engine-ico img{display:block;width:100%;height:100%;object-fit:contain}
+.engine-menu{position:absolute;z-index:20;right:12px;top:55px;min-width:172px;padding:6px;border:1px solid var(--line-strong);background:var(--solid);box-shadow:var(--shadow)}
+.engine-menu button{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;text-align:left;border:0;background:transparent;font-size:13px;cursor:pointer}
+.engine-menu .engine-ico{width:16px;height:16px}
+.engine-menu .engine-name{color:var(--ink)}
+.engine-menu button:hover{background:var(--accent-soft)}
+.engine-menu button:hover .engine-name{color:var(--accent)}
+
+/* ---------- 9. 卡片 ---------- */
+.content-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:16px}
+.surface{min-height:275px;padding:23px;border:1px solid var(--line);background:var(--surface);box-shadow:0 10px 34px rgba(25,43,58,.06)}
+.surface-head{display:flex;align-items:flex-start;justify-content:space-between}
+.section-kicker{display:block;color:var(--faint);font-size:11px;letter-spacing:.04em}
+.surface h2{margin:7px 0 0;font-size:16px;font-weight:600;letter-spacing:-.01em}
+
+/* 卡片头两个动作按钮（清空 / 知乎）：无壳纯文字，同一套语言与 hover 反馈 */
+.text-button,.source-switch{display:inline-flex;align-items:center;gap:6px;padding:2px 0;border:0;border-radius:0;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:400;line-height:1.4;letter-spacing:0;transition:color 160ms var(--ease)}
+.text-button:hover,.source-switch:hover{color:var(--accent)}
+.text-button:focus-visible,.source-switch:focus-visible{color:var(--accent);outline:0;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.text-button svg{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.source-switch svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.source-switch[data-busy=true] svg{animation:switch-spin 900ms linear infinite}
+
+.note-form{display:flex;margin-top:29px;border-bottom:1px solid var(--line-strong)}
+.note-form input{flex:1;min-width:0;padding:9px 0;border:0;outline:0;background:transparent;font-size:13px}
+.note-form input::placeholder{color:var(--faint)}
+.note-form button{width:30px;border:0;background:transparent;color:var(--accent);font-size:21px;cursor:pointer}
+.notes-list,.trend-list{margin-top:16px}
+.note-item{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.55;animation:row-in 240ms var(--ease) both}
+.note-item button{flex:0 0 auto;width:17px;height:17px;padding:0;border:1px solid var(--line-strong);border-radius:50%;background:transparent;color:var(--muted);font-size:10px;cursor:pointer}
+.note-item.done span{color:var(--faint);text-decoration:line-through}
+.note-item .remove-note{margin-left:auto;border:0;border-radius:0;font-size:13px;opacity:0}
+.note-item:hover .remove-note{opacity:1}
+.empty-state{font-size:13px;font-weight:400;line-height:1.55}
+.surface-foot{margin:18px 0 0;color:var(--faint);font-size:11px;letter-spacing:.04em}
+.trend-list{position:relative;z-index:1}
+.trend-item{display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--line);color:inherit;text-decoration:none}
+.trend-index{color:var(--accent);font:11px 'DM Mono',monospace;letter-spacing:.04em}
+.trend-title{font-size:13px;font-weight:500;line-height:1.55}
+.trend-domain{margin-top:4px;color:var(--faint);font:10px 'DM Mono',monospace;letter-spacing:.04em}
+.loading-line{height:11px;width:92%;margin:18px 0;border-bottom:1px solid var(--line);opacity:.7}
+.loading-line.short{width:68%}
+
+/* 元信息统一字阶：11px mono（卡片小标 / 页脚 / 来源 / 搜索引擎） */
+.section-kicker,.surface-foot,.bottom-bar,.brand-copy small,
+.wallpaper-info,#wallpaperCaption,.search-engine,.trend-index{font-family:'DM Mono',monospace;letter-spacing:.04em}
+
+/* ---------- 10. 页脚 ----------
+   ⚠️ 必须 position:relative + z-index:1（见文件头层级约定）。
+   曾经它是 position:fixed 悬浮条：文字滚动时会从半透明条后面穿过、叠在 iOS
+   底部工具栏上；也曾因 position:static 丢失 z-index，在浅色模式下整条被壁纸盖住。 */
+.bottom-bar{display:flex;justify-content:space-between;align-items:center;max-width:var(--column);margin:0 auto;padding:20px 28px 30px;color:var(--muted);background:transparent;font-size:11px;text-align:left}
+.wallpaper-info{color:var(--muted);font-size:11px}
+.wallpaper-info:hover{color:var(--accent)}
+
+/* 页脚左侧的壁纸署名（现在是 Unsplash 链接）：无下划线、平时不抢色，
+   只有真有链接（[href]）时才在 hover 提亮，和右侧「换一张」同一套反馈。 */
+.bottom-bar a#wallpaperCaption{color:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* 摄影师名可能很长，署名让位给右侧「换一张」，不换行、超出打点 */
+.bottom-bar .wallpaper-info#wallpaperRefresh{flex:none;white-space:nowrap}
+.bottom-bar a#wallpaperCaption[href]:hover,
+.bottom-bar a#wallpaperCaption[href]:focus-visible{color:var(--accent)}
+:root:not(.dark).wp-bottom-dark .bottom-bar a#wallpaperCaption[href]:hover,
+:root:not(.dark).wp-bottom-dark .bottom-bar a#wallpaperCaption[href]:focus-visible{color:#ffd9a0}
+:root:not(.dark).wp-bottom-light .bottom-bar a#wallpaperCaption[href]:hover,
+:root:not(.dark).wp-bottom-light .bottom-bar a#wallpaperCaption[href]:focus-visible{color:#b3722a}
+:root.dark .bottom-bar a#wallpaperCaption[href]:hover,
+:root.dark .bottom-bar a#wallpaperCaption[href]:focus-visible{color:#ffd9a0}
+
+/* ---------- 11. 边缘晕影 ----------
+   极轻的暗色晕影，盖在内容之上（z-index:4）、搜索面板之下。照片边缘变暗看起来
+   像自然暗角，几不可见；作用是把滚到屏幕上/下边缘的文字压暗，让 iOS 状态栏与
+   底部胶囊玻璃底下不再清晰可读（暗色模式靠 wash 自带的暗渐变天然有此效果）。 */
+.edge-fade{position:fixed;left:0;right:0;z-index:4;pointer-events:none}
+.edge-fade-top{top:0;height:44px;background:linear-gradient(180deg,rgba(10,14,18,.15),rgba(10,14,18,0))}
+.edge-fade-bottom{bottom:0;height:40px;background:linear-gradient(0deg,rgba(10,14,18,.15),rgba(10,14,18,0))}
+
+/* ---------- 12. 壁纸明暗自适应 ----------
+   app.js 采样壁纸在问候区/页脚所在条带的亮度，给 <html> 挂 wp-top-* / wp-bottom-*。
+   默认按浅底初始化；采样到深色背景则切亮字。所有分支都不加文字光晕
+   （大范围模糊阴影在浅底壁纸上是白雾、深底上是黑雾，可读性交给字色对比）。 */
+:root:not(.dark).wp-top-dark .eyebrow,
+:root:not(.dark).wp-top-dark .hero-meta{color:#dce5eb}
+:root:not(.dark).wp-top-dark .hero-block h1{color:#f4f8fa}
+:root:not(.dark).wp-top-dark .hero-meta #clock{color:#fff}
+:root:not(.dark).wp-top-dark .meta-divider{background:rgba(255,255,255,.45)}
+:root:not(.dark).wp-top-dark #weatherText{color:inherit}
+:root:not(.dark).wp-top-dark .status-dot{background:#e8a558}
+:root:not(.dark).wp-top-dark .brand{color:#f4f8fa}
+:root:not(.dark).wp-top-dark .brand-copy small{color:rgba(255,255,255,.72)}
+:root:not(.dark).wp-top-dark .hero-note{color:rgba(255,255,255,.68)}
+:root:not(.dark).wp-top-light .eyebrow{color:#2f3d47}
+:root:not(.dark).wp-top-light .hero-block h1{color:#1b2731}
+:root:not(.dark).wp-top-light .hero-meta{color:#46535e}
+:root:not(.dark).wp-top-light .hero-meta #clock{color:#0f181f}
+:root:not(.dark).wp-top-light .meta-divider{background:rgba(15,24,31,.42)}
+:root:not(.dark).wp-top-light #weatherText{color:#2f3d47}
+:root:not(.dark).wp-top-light .status-dot{background:#d98f3f}
+:root:not(.dark).wp-top-light .hero-note{color:#66717a}
+:root:not(.dark).wp-bottom-dark .bottom-bar{color:rgba(255,255,255,.92)}
+:root:not(.dark).wp-bottom-dark .bottom-bar #wallpaperCaption{color:rgba(255,255,255,.8)}
+:root:not(.dark).wp-bottom-dark .bottom-bar .wallpaper-info{color:rgba(255,255,255,.92)}
+:root:not(.dark).wp-bottom-dark .bottom-bar .wallpaper-info:hover{color:#ffd9a0}
+:root:not(.dark).wp-bottom-light .bottom-bar{color:#4a5761}
+:root:not(.dark).wp-bottom-light .bottom-bar #wallpaperCaption{color:#5c6a75}
+:root:not(.dark).wp-bottom-light .bottom-bar .wallpaper-info{color:#3a4750}
+:root:not(.dark).wp-bottom-light .bottom-bar .wallpaper-info:hover{color:#b3722a}
+:root.dark .bottom-bar{color:rgba(240,246,250,.92)}
+:root.dark .bottom-bar .wallpaper-info:hover{color:#ffd9a0}
+:root.dark .hero-note{color:#7d8892}
+/* 天气链接 hover 提亮：必须带与分支色规则同级的 :not 前缀，否则优先级不够 */
+:root:not(.dark).wp-top-light .weather-link:hover #weatherText,
+:root:not(.dark).wp-top-dark .weather-link:hover #weatherText,
+:root.dark .weather-link:hover #weatherText,
+:root:not(.dark).wp-top-light .weather-link:focus-visible #weatherText,
+:root:not(.dark).wp-top-dark .weather-link:focus-visible #weatherText,
+:root.dark .weather-link:focus-visible #weatherText{color:var(--accent)}
+
+/* ---------- 13. 品牌图标：PNG 透明通道做 mask，跟随 currentColor（字色变它跟着变） ---------- */
+.brand-mark{display:block;flex:none;width:28px;height:28px;background-color:currentColor;-webkit-mask:url("/assets/brand-home.png?v=5ae3b878") no-repeat center/contain;mask:url("/assets/brand-home.png?v=5ae3b878") no-repeat center/contain}
+
+/* ---------- 14. 动效 ---------- */
+@keyframes row-in{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+@keyframes switch-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}
+}
+
+/* ---------- 15. 响应式 ---------- */
+@media(min-width:701px){
+  .workspace{margin-top:clamp(26px,6.5vh,84px)}
+}
+@media(max-width:700px){
+  :root{--gutter:clamp(24px,6.6vw,32px)}
+  .topbar{padding:18px var(--gutter)}
+  .workspace{margin-top:46px;padding:0 var(--gutter) 16px}
+  .hero-block{margin-bottom:30px}
+  .hero-block h1{font-size:clamp(46px,15vw,64px)}
+  .content-grid{grid-template-columns:1fr}
+  .surface{min-height:0}
+  .search-panel{height:56px}
+  .search-engine{padding-left:8px;font-size:10px}
+  .bottom-bar{padding:14px var(--gutter) 26px}
+  /* 手机端去掉壁纸那 2% 缩放：整屏 fixed + transform 会单独提升为合成层，
+     滚动重栅格化时会有「跳一下／像放大」的观感；cover 本身已铺满 */
+  .wallpaper{transform:none}
+}

@@ -1,0 +1,10 @@
+# 部署工具本地状态（不应入库）
+.vercel/
+
+# macOS
+.DS_Store
+
+# 测试台产物
+__pycache__/
+*.pyc
+tests/last-run.log

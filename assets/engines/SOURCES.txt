@@ -1,0 +1,5 @@
+四家搜索引擎的官方图标（均为官方原始资产，未做任何重绘/改色）
+duckduckgo.png  https://icons.duckduckgo.com/ip3/duckduckgo.com.ico   (DuckDuckGo 官方图标服务, 转 PNG 32px)
+bing.svg        https://upload.wikimedia.org/wikipedia/commons/0/07/Bing_favicon.svg   (Bing 官方 favicon 矢量 32x32)
+google.svg      https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg   (Google 官方 "G" 矢量 24x24，四色 #4285F4/#EA4335/#FBBC05/#34A853)
+baidu.png       https://www.baidu.com/favicon.ico   (百度官网 favicon, 转 PNG 64px)
