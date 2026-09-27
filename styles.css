@@ -60,7 +60,9 @@ button,input{font:inherit;color:inherit}
 
 /* ---------- 6. 顶栏 ---------- */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:27px clamp(22px,5vw,76px)}
-.brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+.brand{display:inline-flex;align-items:center;gap:10px;color:inherit;-webkit-tap-highlight-color:transparent;cursor:default;user-select:none}
+/* logo 点击无任何视觉反馈（用户定案）：全局 tap-highlight 对这条链接没压干净，单独钉死 */
+.brand:active,.brand:focus{opacity:1;color:inherit;background:transparent}
 .brand-copy{display:flex;flex-direction:column;line-height:1.1}
 .brand-copy strong{font-size:14px;font-weight:700;letter-spacing:.02em}
 .brand-copy small{margin-top:4px;color:var(--muted);font:10px 'DM Mono',monospace;letter-spacing:.04em}
@@ -90,7 +92,10 @@ button,input{font:inherit;color:inherit}
 .eyebrow #dateLabel{font-weight:600}
 .eyebrow #greeting{font-weight:700}
 .status-dot{width:5px;height:5px;margin-right:-5px;background:var(--accent);border-radius:50%}
-.hero-block h1{margin:3px 0 8px;margin-left:var(--clock-lead,-.083em);font-size:clamp(52px,8.2vw,94px);font-weight:600;letter-spacing:-.03em;line-height:.85;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+.hero-block h1{margin:-.02em 0 .14em;margin-left:var(--clock-lead,-.083em);font-size:clamp(52px,8.2vw,94px);font-weight:600;letter-spacing:-.03em;line-height:.85;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+/* ↑ 上下留白均衡：line-height:.85 裁行盒后数字字迹在盒内偏下，视觉上「上空下挤」。
+   实测 94px 字号下上隙 24px / 下隙 14px，用 em 边距把字迹上提 0.053em、把下隙补回，
+   em 随字号缩放，手机 clamp 小字号同样成立。 */
 .hero-meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;font-weight:600;letter-spacing:.04em;line-height:1.45}
 .hero-meta #clock{color:var(--ink);font-weight:600}
 .hero-meta #weatherText{font-weight:600}
@@ -98,7 +103,7 @@ button,input{font:inherit;color:inherit}
 .meta-divider{width:3px;height:3px;background:var(--line-strong);border-radius:50%}
 /* 天气图标：Icons8 PNG 用 mask 渲染成 currentColor（颜色跟文字一族），图片由 app.js 按天气码切换 */
 .weather-ico{display:inline-flex;align-items:center;justify-content:center;flex:none;background-color:currentColor;-webkit-mask-position:center;-webkit-mask-repeat:no-repeat;-webkit-mask-size:contain;mask-position:center;mask-repeat:no-repeat;mask-size:contain}
-.weather-link{color:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent}
+.weather-link{color:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent;transition:opacity 160ms var(--ease)}
 .hero-note{color:var(--faint)}
 
 /* ---------- 8. 搜索 ---------- */
@@ -128,9 +133,11 @@ button,input{font:inherit;color:inherit}
 .surface h2{margin:7px 0 0;font-size:16px;font-weight:600;letter-spacing:-.01em}
 
 /* 卡片头两个动作按钮（清空 / 知乎）：无壳纯文字，同一套语言与 hover 反馈 */
-.text-button,.source-switch{display:inline-flex;align-items:center;gap:6px;padding:2px 0;border:0;border-radius:0;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:400;line-height:1.4;letter-spacing:0;transition:color 160ms var(--ease)}
-.text-button:hover,.source-switch:hover{color:var(--accent)}
-.text-button:focus-visible,.source-switch:focus-visible{color:var(--accent);outline:0;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
+.text-button,.source-switch{display:inline-flex;align-items:center;gap:6px;padding:2px 0;border:0;border-radius:0;background:transparent;color:var(--muted);font-family:inherit;font-size:12px;font-weight:400;line-height:1.4;letter-spacing:0;transition:opacity 160ms var(--ease)}
+/* hover 统一语言（用户定案 2026-09-27）：不用 accent 变色，一律 opacity:.75 ——
+   白字上是「比白深一点的灰」，黑字上是「比黑浅一点的灰」，任何壁纸/主题都不跳色 */
+.text-button:hover,.source-switch:hover{opacity:.75}
+.text-button:focus-visible,.source-switch:focus-visible{opacity:.75;outline:0;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:3px}
 .text-button svg{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
 .source-switch svg{width:13px;height:13px;flex:none;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
 /* 忙碌反馈只做静态弱化，不旋转 —— 箭头在文字旁边转个不停比加载本身更吵。
@@ -140,6 +147,9 @@ button,input{font:inherit;color:inherit}
 .note-form{display:flex;margin-top:29px;border-bottom:1px solid var(--line-strong)}
 .note-form input{flex:1;min-width:0;padding:9px 0;border:0;outline:0;background:transparent;font-size:13px}
 .note-form input::placeholder{color:var(--faint)}
+/* 浏览器 autofill 会给输入框糊一层淡蓝底/蓝框（用户 2026-09-27 明确不要）：
+   autocomplete=off 已关掉历史下拉，这里再兜底抹掉 autofill 的着色。 */
+.note-form input:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px var(--surface) inset;-webkit-text-fill-color:var(--ink);caret-color:var(--ink);transition:background-color 99999s ease-out}
 .note-form button{width:30px;border:0;background:transparent;color:var(--accent);font-size:21px;cursor:pointer}
 .notes-list,.trend-list{margin-top:16px}
 .note-item{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--line);font-size:13px;line-height:1.55;animation:row-in 240ms var(--ease) both}
@@ -166,8 +176,8 @@ button,input{font:inherit;color:inherit}
    曾经它是 position:fixed 悬浮条：文字滚动时会从半透明条后面穿过、叠在 iOS
    底部工具栏上；也曾因 position:static 丢失 z-index，在浅色模式下整条被壁纸盖住。 */
 .bottom-bar{display:flex;justify-content:space-between;align-items:center;max-width:var(--column);margin:0 auto;padding:20px 28px 30px;color:var(--muted);background:transparent;font-size:11px;font-weight:500;text-align:left}
-.wallpaper-info{color:var(--muted);font-size:11px}
-.wallpaper-info:hover{color:var(--accent)}
+.wallpaper-info{color:var(--muted);font-size:11px;transition:opacity 160ms var(--ease)}
+.wallpaper-info:hover{opacity:.75}
 
 /* 页脚左侧的壁纸署名（现在是 Unsplash 链接）：无下划线、平时不抢色，
    只有真有链接（[href]）时才在 hover 提亮，和右侧「换一张」同一套反馈。 */
@@ -175,9 +185,7 @@ button,input{font:inherit;color:inherit}
 /* 摄影师名可能很长，署名让位给右侧「换一张」，不换行、超出打点 */
 .bottom-bar .wallpaper-info#wallpaperRefresh{flex:none;white-space:nowrap}
 .bottom-bar a#wallpaperCaption[href]:hover,
-.bottom-bar a#wallpaperCaption[href]:focus-visible{color:var(--wp-bottom-accent)}
-:root.dark .bottom-bar a#wallpaperCaption[href]:hover,
-:root.dark .bottom-bar a#wallpaperCaption[href]:focus-visible{color:#ffd9a0}
+.bottom-bar a#wallpaperCaption[href]:focus-visible{opacity:.75}
 
 /* ---------- 11. 壁纸文字对比度自适应 ----------
    app.js 对问候区/页脚的壁纸区域求平均亮度，更新 --wp-* 色值：
@@ -198,18 +206,14 @@ button,input{font:inherit;color:inherit}
 :root:not(.dark) .bottom-bar{color:var(--wp-bottom-muted)}
 :root:not(.dark) .bottom-bar #wallpaperCaption{color:var(--wp-bottom-faint)}
 :root:not(.dark) .bottom-bar .wallpaper-info{color:var(--wp-bottom-muted)}
-:root:not(.dark) .bottom-bar .wallpaper-info:hover{color:var(--wp-bottom-accent)}
 :root.dark .bottom-bar{color:rgba(255,255,255,.92)}
-:root.dark .bottom-bar .wallpaper-info:hover{color:#ffd9a0}
 :root.dark .hero-note{color:rgba(255,255,255,.78)}
 /* 手机点按高亮（半透明圆角矩形选择框）整体关闭；键盘 focus-visible 的 outline 不受影响 */
 a,button,input,select,textarea,label,[role='button']{-webkit-tap-highlight-color:transparent}
 a:focus,button:focus,[role='button']:focus{outline:0}
-/* 天气链接 hover 提亮：必须带与分支色规则同级的 :not 前缀，否则优先级不够 */
-:root:not(.dark) .weather-link:hover #weatherText,
-:root.dark .weather-link:hover #weatherText,
-:root:not(.dark) .weather-link:focus-visible #weatherText,
-:root.dark .weather-link:focus-visible #weatherText{color:var(--accent)}
+/* 天气链接 hover 同样走统一 opacity 灰（上面 .weather-link 基础规则带过渡） */
+.weather-link:hover,
+.weather-link:focus-visible{opacity:.75}
 
 /* ---------- 12. 品牌图标：PNG 透明通道做 mask，跟随 currentColor（字色变它跟着变） ---------- */
 .brand-mark{display:block;flex:none;width:28px;height:28px;background-color:currentColor;-webkit-mask:url("/assets/brand-home.png?v=5ae3b878") no-repeat center/contain;mask:url("/assets/brand-home.png?v=5ae3b878") no-repeat center/contain}
@@ -222,7 +226,30 @@ a:focus,button:focus,[role='button']:focus{outline:0}
 
 /* ---------- 14. 响应式 ---------- */
 @media(min-width:701px){
-  .workspace{margin-top:clamp(26px,6.5vh,84px)}
+  /* 桌面端锁一屏：外壳定为视口高度、纵向 flex，内容在顶栏与页脚之间垂直居中，
+     超出裁掉 —— 桌面上永远不出滚动条。移动端保持自然流式（可滚动）。
+     justify-content 用 safe center：内容真的放不下时退回顶对齐而不是两端被裁。
+     卡片内部放不下的列表在卡片里滚（便签/热点），页脚永远完整可见。 */
+  .app-shell{height:100vh;height:100svh;display:flex;flex-direction:column;overflow:hidden}
+  .topbar,.bottom-bar{flex:none}
+  /* ⚠️ flex 子项 + margin:auto 会阻止 stretch、缩成内容宽（页脚两项会挤到中间），
+     必须显式撑满，space-between 才能左右铺开。 */
+  .workspace,.bottom-bar{width:100%}
+  .workspace{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:safe center;margin-top:0;padding-bottom:0}
+  .content-grid{flex:1;min-height:0}
+  .surface{min-height:0;display:flex;flex-direction:column;overflow:hidden}
+  .surface-head,.note-form,.surface-foot{flex:none}
+  .notes-list,.trend-list{flex:1;min-height:0;overflow:auto}
+  /* 卡片内滚的滚动条：极细、随主题淡入，不抢视线 */
+  .notes-list::-webkit-scrollbar,.trend-list::-webkit-scrollbar{width:4px}
+  .notes-list::-webkit-scrollbar-thumb,.trend-list::-webkit-scrollbar-thumb{background:rgba(127,140,150,.28);border-radius:2px}
+  .notes-list::-webkit-scrollbar-track,.trend-list::-webkit-scrollbar-track{background:transparent}
+}
+/* 矮桌面窗口（笔记本小窗 / 分屏）：压缩留白与字号，整页仍然一屏不滚。 */
+@media(min-width:701px) and (max-height:820px){
+  .topbar{padding-top:14px;padding-bottom:14px}
+  .hero-block{margin-bottom:20px}
+  .hero-block h1{font-size:clamp(44px,6.4vw,70px)}
 }
 @media(max-width:700px){
   :root{--gutter:clamp(24px,6.6vw,32px)}
