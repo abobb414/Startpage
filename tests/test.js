@@ -235,15 +235,18 @@
       els.weatherText.textContent);
   } else {
     T_ok('天气已取到并渲染温度', /°C$/.test(els.weatherText.textContent), els.weatherText.textContent);
-    T_ok('天气图标已写入 SVG', els.weatherIcon.innerHTML.includes('<svg'));
+    T_ok('天气图标已写入 mask（Icons8 PNG）',
+      /assets\/weather\/[a-z]+\.png/.test(els.weatherIcon.style.maskImage || '')
+      || /assets\/weather\/[a-z]+\.png/.test(els.weatherIcon.style.webkitMaskImage || ''),
+      els.weatherIcon.style.maskImage);
     T_ok('天气标题带定位来源说明', /定位|默认城市/.test(els.weatherText.getAttribute('title') || ''),
       els.weatherText.getAttribute('title'));
   }
-  T_ok('天气图标映射：晴/夜/云/雨/雪/霾/风', (() => {
+  T_ok('天气图标映射：晴/夜/云/雨/雪/霾/风/雷暴', (() => {
     const T_m = {
       CLEAR_DAY: 'clearDay', CLEAR_NIGHT: 'clearNight', PARTLY_CLOUDY_DAY: 'cloudyDay',
       PARTLY_CLOUDY_NIGHT: 'cloudyNight', CLOUDY: 'cloudy', LIGHT_RAIN: 'rain',
-      MODERATE_SNOW: 'snow', HEAVY_HAZE: 'haze', WIND: 'wind', '': 'cloudy',
+      MODERATE_SNOW: 'snow', HEAVY_HAZE: 'haze', WIND: 'wind', THUNDER_SHOWER: 'storm', '': 'cloudy',
     };
     return Object.keys(T_m).every((k) => weatherIconKey(k) === T_m[k]);
   })());
@@ -315,6 +318,23 @@
     sampleWallpaperTone('img/white.png');
     const T_white = await T_poll(() => document.documentElement.classList.contains('wp-top-light'));
     T_ok('白图采样判为「浅底」→ 用深字', T_white, document.documentElement.className);
+    const T_warmTone = scoreTone(Array(100).fill(0.262));
+    T_ok('中间调偏暗背景平均亮度 < 阈值 → 白字', T_warmTone.text === 'light', JSON.stringify(T_warmTone));
+    const T_darkWarmTone = scoreTone(Array(100).fill(0.12));
+    T_ok('深色背景平均亮度远低于阈值 → 白字', T_darkWarmTone.text === 'light', JSON.stringify(T_darkWarmTone));
+    const T_brightTone = scoreTone(Array(100).fill(0.62));
+    T_ok('亮色背景平均亮度 ≥ 阈值 → 黑字', T_brightTone.text === 'dark', JSON.stringify(T_brightTone));
+    const T_mixedTone = scoreTone([...Array(60).fill(0.04), ...Array(40).fill(0.85)]);
+    T_ok('明暗混合背景只按平均值二选一（无 mixed 状态）',
+      T_mixedTone.text === 'light' && T_mixedTone.mixed === undefined, JSON.stringify(T_mixedTone));
+    writeTone('top', T_mixedTone);
+    T_ok('writeTone 不再写入阴影令牌、不加 mixed class',
+      !document.documentElement.classList.contains('wp-top-mixed') &&
+      document.documentElement.style.getPropertyValue('--wp-top-shadow') === '');
+    writeTone('top', T_warmTone);
+    T_ok('采样写入对应区域 CSS 颜色变量',
+      !!document.documentElement.style.getPropertyValue('--wp-top-ink') &&
+      !!document.documentElement.style.getPropertyValue('--wp-bottom-ink'));
     T_ok('采样失败不抛异常（跨域被拦/图 404）', !T_throws(() => sampleWallpaperTone('__missing__.png')));
   }
 

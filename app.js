@@ -417,18 +417,21 @@ async function switchTrendSource() {
 
 /* ---------- 10. 天气：彩云天气（JSONP） ---------- */
 
-/* 天气线性图标：24 网格、1.5 线宽、currentColor 描边，与文字同一视觉重量。
-   只按彩云 skycon 分档取值，不做动画 —— 起始页上的动效越少越耐看。 */
+/* 天气图标：Icons8「SF Regular」风格 PNG（assets/weather/，100px，用户 2026-09-27 提供/指定）。
+   用 CSS mask 渲染成 currentColor —— 图标颜色永远跟文字一族（纯白或纯黑），
+   尺寸由 .weather-ico 控制（20px）。只按彩云 skycon 分档取值，不做动画。
+   版本号由 bust-cache.py 维护；新图标先放 assets/weather/ 再跑一遍脚本。 */
 const WEATHER_ICONS = {
-  clearDay: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2.8v2.3M12 18.9v2.3M2.8 12h2.3M18.9 12h2.3M5.5 5.5l1.6 1.6M16.9 16.9l1.6 1.6M18.5 5.5l-1.6 1.6M7.1 16.9l-1.6 1.6"/></svg>',
-  clearNight: '<svg viewBox="0 0 24 24"><path d="M20.4 14.7A8.6 8.6 0 0 1 9.3 3.6a8.7 8.7 0 1 0 11.1 11.1Z"/></svg>',
-  cloudyDay: '<svg viewBox="0 0 24 24"><path d="M15.4 5.6l.9-1.7M18.8 7.2l1.8-.6M18.4 10.4l1.7.9"/><path d="M7.2 18.6h9.6a3.5 3.5 0 0 0 .3-7 4.8 4.8 0 0 0-9.1-.5 3.6 3.6 0 0 0-.8 7.5Z"/></svg>',
-  cloudyNight: '<svg viewBox="0 0 24 24"><path d="M15.6 4.4a3.4 3.4 0 0 0 4.2 4.4 3.9 3.9 0 0 1-4.2-4.4Z"/><path d="M7.2 19h9.6a3.5 3.5 0 0 0 .3-7 4.8 4.8 0 0 0-9.1-.5 3.6 3.6 0 0 0-.8 7.5Z"/></svg>',
-  cloudy: '<svg viewBox="0 0 24 24"><path d="M6.6 15.2h11a3.6 3.6 0 0 0 .3-7.2 4.9 4.9 0 0 0-9.3-.4 3.7 3.7 0 0 0-2 7.6Z"/></svg>',
-  rain: '<svg viewBox="0 0 24 24"><path d="M6.6 14.8h11a3.6 3.6 0 0 0 .3-7.2 4.9 4.9 0 0 0-9.3-.4 3.7 3.7 0 0 0-2 7.6Z"/><path d="M8.8 17.4 8.1 19.8M12 17.4 11.3 19.8M15.2 17.4 14.5 19.8"/></svg>',
-  snow: '<svg viewBox="0 0 24 24"><path d="M6.6 14.8h11a3.6 3.6 0 0 0 .3-7.2 4.9 4.9 0 0 0-9.3-.4 3.7 3.7 0 0 0-2 7.6Z"/><path d="M9 18.2h.01M12 19.6h.01M15 18.2h.01"/></svg>',
-  haze: '<svg viewBox="0 0 24 24"><path d="M4.4 9.6h10.2M7.6 13.2h12M5.6 16.8h9.2"/></svg>',
-  wind: '<svg viewBox="0 0 24 24"><path d="M3.6 9.4h9.2a2.6 2.6 0 1 0-2.6-2.6M3.6 14.6h13.2a2.6 2.6 0 1 1-2.6 2.6"/></svg>',
+  clearDay: '/assets/weather/sun.png?v=cb3b9a5f',
+  clearNight: '/assets/weather/moon.png?v=f46fa0d1',
+  cloudyDay: '/assets/weather/partly-cloudy-day.png?v=540a4528',
+  cloudyNight: '/assets/weather/partly-cloudy-night.png?v=d29d4c08',
+  cloudy: '/assets/weather/cloud.png?v=f8d90f07',
+  rain: '/assets/weather/rain.png?v=e2eb8336',
+  snow: '/assets/weather/snow.png?v=4ccccd1c',
+  storm: '/assets/weather/storm.png?v=62b1902a',
+  haze: '/assets/weather/fog-day.png?v=35ca5b72',
+  wind: '/assets/weather/wind.png?v=14154a30',
 };
 function weatherIconKey(skycon) {
   if (!skycon) return 'cloudy';
@@ -436,6 +439,7 @@ function weatherIconKey(skycon) {
   if (String(skycon).startsWith('CLEAR')) return night ? 'clearNight' : 'clearDay';
   if (String(skycon).startsWith('PARTLY_CLOUDY')) return night ? 'cloudyNight' : 'cloudyDay';
   if (skycon === 'CLOUDY') return 'cloudy';
+  if (String(skycon).includes('THUNDER')) return 'storm';
   if (String(skycon).includes('RAIN')) return 'rain';
   if (String(skycon).includes('SNOW')) return 'snow';
   if (String(skycon).includes('WIND')) return 'wind';
@@ -443,7 +447,9 @@ function weatherIconKey(skycon) {
 }
 function setWeatherIcon(skycon) {
   if (!els.weatherIcon) return;
-  els.weatherIcon.innerHTML = WEATHER_ICONS[weatherIconKey(skycon)] || WEATHER_ICONS.cloudy;
+  const url = WEATHER_ICONS[weatherIconKey(skycon)] || WEATHER_ICONS.cloudy;
+  els.weatherIcon.style.webkitMaskImage = `url("${url}")`;
+  els.weatherIcon.style.maskImage = `url("${url}")`;
 }
 
 /* 取当前位置。只有「浏览器已经明确拒绝」才静默回落；其余情况都必须真的调一次
@@ -507,7 +513,11 @@ async function loadWeather() {
     setWeatherIcon(realtime.skycon);
   } catch {
     els.weatherText.textContent = '天气未连接';
-    if (els.weatherIcon) els.weatherIcon.innerHTML = '';
+    if (els.weatherIcon) {
+      els.weatherIcon.innerHTML = '';
+      els.weatherIcon.style.webkitMaskImage = '';
+      els.weatherIcon.style.maskImage = '';
+    }
     weatherBody = '';
     writeWeatherTitle();
   }
@@ -577,7 +587,7 @@ function applyWallpaper(item) {
   image.src = item.url;
 }
 
-/* 采样壁纸顶部（问候区）与底部（页脚区）平均亮度，自动切换文字深浅
+/* 采样壁纸顶部（问候区）与底部（页脚区）的平均亮度，自动选择文字色
    ⚠️ 四个必须遵守的前提（否则电脑/手机会判出完全相反的字色）：
    ① 采样坐标系必须与「壁纸层这个盒子」对齐，不是视口。壁纸层是
       position:fixed + top:-140px + height:calc(100vh + 280px)，比视口高一截，
@@ -590,18 +600,55 @@ function applyWallpaper(item) {
       整栏容器宽度（撑满 1030px），得用 Range 量内容节点才拿得到文字的实际宽度。
    ④ 结果回来时要确认「还是当前这张图」。连点换一张 / 旋屏重采都会让两次采样并存，
       迟到的旧结果会把新图的判定覆盖掉。
-   ⑤ 判定看的是「亮像素占比」，不是平均值。照片里亮区往往比暗区亮得多（米色纸面
-      L≈220、深蓝 L≈70），平均值天然被拉向亮侧 —— 实测一块「47% 是暗块」的区域
-      平均亮度仍有 148，按平均值就会判成浅底、给深色字，而深色字压在那些暗块上是
-      **完全消失**。反过来，浅色字压在亮块上只是对比弱、仍可辨认，两者不是同等代价。
-      所以只有「亮区占绝对多数」才用深色字。 */
 
-/* 判定阈值：像素亮度 ≥ LIGHT_TONE 记作「亮」；窗口内亮像素占比 ≥ BRIGHT_ENOUGH
-   才认为背景足够亮、可以用深色字。 */
-const LIGHT_TONE = 132;
-const BRIGHT_ENOUGH = 0.75;
+   判定规则（用户定案，别再复杂化）：
+   对那块壁纸区域求平均亮度（sRGB 相对亮度，非线性 RGB 平均会把中间调整体推亮），
+   亮于阈值 → 整块文字全用黑色；暗于阈值 → 整块全用白色。
+   不加任何文字阴影 / 描边；一个区域只有一种字色，不做混合模式。 */
+
+/* 平均亮度阈值：0 = 纯黑，1 = 纯白。0.45 偏向白字 —— 同样处于中间调的照片，
+   白字压暗块比黑字压亮块更不容易消失。 */
+const TONE_SWITCH = 0.45;
+/* 字色只有一族：亮背景 = 中性黑，暗背景 = 纯白。
+   次要文字只允许用「同族半透明」，不许带蓝灰色调（用户定案：统一颜色，别加淡蓝）。 */
+const TONE_PALETTE = {
+  dark: {
+    ink: '#101010', muted: 'rgba(0,0,0,.86)', faint: 'rgba(0,0,0,.7)', divider: 'rgba(16,16,16,.5)',
+    accent: '#b3722a',
+  },
+  light: {
+    ink: '#ffffff', muted: 'rgba(255,255,255,.92)', faint: 'rgba(255,255,255,.78)', divider: 'rgba(255,255,255,.6)',
+    accent: '#ffd18a',
+  },
+};
 let lastWallpaperUrl = '';
 let lastToneRatio = 0;
+
+function channelLuma(value) {
+  const channel = value / 255;
+  return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
+}
+function pixelLuma(r, g, b) {
+  return 0.2126 * channelLuma(r) + 0.7152 * channelLuma(g) + 0.0722 * channelLuma(b);
+}
+
+/* 把一块背景变成「该用哪种字色」：只看平均亮度。
+   只依赖数字数组，测试可以直接覆盖纯色、中间调和混合背景。 */
+function scoreTone(lumas) {
+  if (!lumas.length) return { text: 'dark', average: 0 };
+  const average = lumas.reduce((sum, v) => sum + v, 0) / lumas.length;
+  return { text: average >= TONE_SWITCH ? 'dark' : 'light', average };
+}
+
+function writeTone(region, result) {
+  const palette = TONE_PALETTE[result.text] || TONE_PALETTE.dark;
+  const prefix = `--wp-${region}-`;
+  Object.entries(palette).forEach(([name, value]) => els.root.style.setProperty(`${prefix}${name}`, value));
+  const background = result.text === 'light' ? 'dark' : 'light';
+  els.root.classList.toggle(`wp-${region}-dark`, background === 'dark');
+  els.root.classList.toggle(`wp-${region}-light`, background === 'light');
+}
+
 function sampleWallpaperTone(url) {
   if (url) lastWallpaperUrl = url;
   const target = lastWallpaperUrl;
@@ -636,20 +683,18 @@ function sampleWallpaperTone(url) {
       if (ratio > cover) { sh = image.height; sw = sh * cover; sx = (image.width - sw) / 2; sy = 0; }
       else { sw = image.width; sh = sw / cover; sx = 0; sy = (image.height - sh) / 2; }
       ctx.drawImage(image, sx, sy, sw, sh, 0, 0, CW, CH);
-      /* 窗口内「亮像素是否占绝对多数」—— true = 浅底，用深色字。
-         窗口是归一化坐标，原点在壁纸层左上角。 */
-      const toneOf = (x0, x1, y0, y1) => {
+      /* 读取窗口内每个像素的线性相对亮度。窗口是归一化坐标，原点在壁纸层左上角。 */
+      const lumasOf = (x0, x1, y0, y1) => {
         const colA = Math.max(0, Math.min(CW - 1, Math.floor(x0 * CW)));
         const colB = Math.max(colA + 1, Math.min(CW, Math.ceil(x1 * CW)));
         const rowA = Math.max(0, Math.min(CH - 1, Math.floor(y0 * CH)));
         const rowB = Math.max(rowA + 1, Math.min(CH, Math.ceil(y1 * CH)));
         const data = ctx.getImageData(colA, rowA, colB - colA, rowB - rowA).data;
-        let bright = 0, n = 0;
+        const lumas = [];
         for (let i = 0; i < data.length; i += 4) {
-          if (0.2126 * data[i] + 0.7152 * data[i + 1] + 0.0722 * data[i + 2] >= LIGHT_TONE) bright += 1;
-          n += 1;
+          lumas.push(pixelLuma(data[i], data[i + 1], data[i + 2]));
         }
-        return n ? bright / n >= BRIGHT_ENOUGH : true;
+        return lumas;
       };
       /* 文字实际占据的矩形。块级元素的 getBoundingClientRect 给的是「整栏容器宽度」
          （撑满 1030px），不是文字渲染出来的那一小截宽 —— 必须用 Range 罩住内容节点，
@@ -691,12 +736,8 @@ function sampleWallpaperTone(url) {
           || unionRect('.hero-block', false),
         0.02, 0.05,
       );
-      const topIsLight = toneOf(...topWindow);
-      const bottomIsLight = toneOf(...toWindow(unionRect('.bottom-bar', false), 0.01, 0.02));
-      els.root.classList.toggle('wp-top-dark', !topIsLight);
-      els.root.classList.toggle('wp-top-light', topIsLight);
-      els.root.classList.toggle('wp-bottom-dark', !bottomIsLight);
-      els.root.classList.toggle('wp-bottom-light', bottomIsLight);
+      writeTone('top', scoreTone(lumasOf(...topWindow)));
+      writeTone('bottom', scoreTone(lumasOf(...toWindow(unionRect('.bottom-bar', false), 0.01, 0.02))));
       lastToneRatio = vw / vh;
     } catch { /* 画布被跨域污染时保持当前深浅，不做切换 */ }
   };

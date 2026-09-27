@@ -20,6 +20,11 @@
   --surface:rgba(249,251,252,.95); --solid:#f9fbfc;
   --accent:#3d718f; --accent-soft:rgba(61,113,143,.1);
   --shadow:0 18px 60px rgba(25,43,58,.12);
+  /* 壁纸文字令牌：app.js 按问候区 / 页脚的平均亮度更新它们（全黑或全白，无阴影）。 */
+  --wp-top-ink:#101010; --wp-top-muted:rgba(0,0,0,.86); --wp-top-faint:rgba(0,0,0,.7);
+  --wp-top-divider:rgba(16,16,16,.5); --wp-top-accent:#b3722a;
+  --wp-bottom-ink:#101010; --wp-bottom-muted:rgba(0,0,0,.86); --wp-bottom-faint:rgba(0,0,0,.7);
+  --wp-bottom-divider:rgba(16,16,16,.5); --wp-bottom-accent:#b3722a;
   --ease:cubic-bezier(.22,.61,.36,1);
   --gutter:28px; --column:1030px;
 }
@@ -57,15 +62,19 @@ button,input{font:inherit;color:inherit}
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:27px clamp(22px,5vw,76px)}
 .brand{display:inline-flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
 .brand-copy{display:flex;flex-direction:column;line-height:1.1}
-.brand-copy strong{font-size:14px;letter-spacing:.02em}
+.brand-copy strong{font-size:14px;font-weight:700;letter-spacing:.02em}
 .brand-copy small{margin-top:4px;color:var(--muted);font:10px 'DM Mono',monospace;letter-spacing:.04em}
 .topbar-actions{display:flex;align-items:center;gap:17px}
 .icon-button,.text-button,.wallpaper-info,.source-switch{border:0;background:transparent;cursor:pointer}
 .icon-button{width:34px;height:34px;display:grid;place-items:center;transition:color 180ms var(--ease)}
-.icon-button:hover,.icon-button:focus-visible{color:var(--accent);outline:0}
-.icon-button:focus-visible{outline:1px solid var(--accent);outline-offset:4px}
+.icon-button:hover{opacity:.72}
+.icon-button:focus-visible{outline:1px solid currentColor;outline-offset:4px}
 .icon-button.small{width:29px;height:29px}
-.morph-icon{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+/* 主题切换图标：Icons8 SF Regular PNG（assets/theme/），mask 渲染成 currentColor，
+   颜色跟文字一族（.icon-button 色值见下方分支）；两个 span 叠同一格，明暗交叉淡入。 */
+.theme-ico{grid-area:1/1;width:20px;height:20px;background-color:currentColor;-webkit-mask-position:center;-webkit-mask-repeat:no-repeat;-webkit-mask-size:contain;mask-position:center;mask-repeat:no-repeat;mask-size:contain}
+.theme-ico.icon-sun{-webkit-mask-image:url("/assets/theme/sun.png?v=cb3b9a5f");mask-image:url("/assets/theme/sun.png?v=cb3b9a5f")}
+.theme-ico.icon-moon{-webkit-mask-image:url("/assets/theme/moon.png?v=e3e621f4");mask-image:url("/assets/theme/moon.png?v=e3e621f4")}
 .icon-sun,.icon-moon{transition:opacity 220ms var(--ease),transform 260ms var(--ease)}
 .icon-moon{opacity:0;transform:scale(.5) rotate(-20deg);transform-origin:center}
 .dark .icon-sun{opacity:0;transform:scale(.5) rotate(20deg)}
@@ -77,18 +86,18 @@ button,input{font:inherit;color:inherit}
    偏移量由 app.js 随时钟写入 --clock-lead。 */
 .workspace{max-width:var(--column);margin:clamp(26px,6.5vh,84px) auto 0;padding:0 28px 28px}
 .hero-block{margin-bottom:45px}
-.eyebrow{display:flex;align-items:center;gap:9px;margin-left:-9.7px;color:var(--muted);font-size:13px;letter-spacing:.07em;line-height:1.45;text-transform:uppercase}
-.eyebrow #dateLabel{font-weight:500}
-.eyebrow #greeting{font-weight:600}
+.eyebrow{display:flex;align-items:center;gap:9px;margin-left:-9.7px;color:var(--muted);font-size:13px;font-weight:600;letter-spacing:.07em;line-height:1.45;text-transform:uppercase}
+.eyebrow #dateLabel{font-weight:600}
+.eyebrow #greeting{font-weight:700}
 .status-dot{width:5px;height:5px;margin-right:-5px;background:var(--accent);border-radius:50%}
-.hero-block h1{margin:3px 0 8px;margin-left:var(--clock-lead,-.083em);font-size:clamp(52px,8.2vw,94px);font-weight:500;letter-spacing:-.03em;line-height:.85;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
-.hero-meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;letter-spacing:.04em;line-height:1.45}
-.hero-meta #clock{color:var(--ink);font-weight:500}
-.hero-meta #weatherText{font-weight:500}
-.hero-meta .weather-ico{width:16px;height:16px;margin-left:-2px}
+.hero-block h1{margin:3px 0 8px;margin-left:var(--clock-lead,-.083em);font-size:clamp(52px,8.2vw,94px);font-weight:600;letter-spacing:-.03em;line-height:.85;font-variant-numeric:tabular-nums;font-feature-settings:'tnum' 1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale}
+.hero-meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;font-weight:600;letter-spacing:.04em;line-height:1.45}
+.hero-meta #clock{color:var(--ink);font-weight:600}
+.hero-meta #weatherText{font-weight:600}
+.hero-meta .weather-ico{width:20px;height:20px;margin-left:-2px}
 .meta-divider{width:3px;height:3px;background:var(--line-strong);border-radius:50%}
-.weather-ico{display:inline-flex;align-items:center;justify-content:center;flex:none}
-.weather-ico svg{display:block;width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+/* 天气图标：Icons8 PNG 用 mask 渲染成 currentColor（颜色跟文字一族），图片由 app.js 按天气码切换 */
+.weather-ico{display:inline-flex;align-items:center;justify-content:center;flex:none;background-color:currentColor;-webkit-mask-position:center;-webkit-mask-repeat:no-repeat;-webkit-mask-size:contain;mask-position:center;mask-repeat:no-repeat;mask-size:contain}
 .weather-link{color:inherit;text-decoration:none;-webkit-tap-highlight-color:transparent}
 .hero-note{color:var(--faint)}
 
@@ -156,7 +165,7 @@ button,input{font:inherit;color:inherit}
    ⚠️ 必须 position:relative + z-index:1（见文件头层级约定）。
    曾经它是 position:fixed 悬浮条：文字滚动时会从半透明条后面穿过、叠在 iOS
    底部工具栏上；也曾因 position:static 丢失 z-index，在浅色模式下整条被壁纸盖住。 */
-.bottom-bar{display:flex;justify-content:space-between;align-items:center;max-width:var(--column);margin:0 auto;padding:20px 28px 30px;color:var(--muted);background:transparent;font-size:11px;text-align:left}
+.bottom-bar{display:flex;justify-content:space-between;align-items:center;max-width:var(--column);margin:0 auto;padding:20px 28px 30px;color:var(--muted);background:transparent;font-size:11px;font-weight:500;text-align:left}
 .wallpaper-info{color:var(--muted);font-size:11px}
 .wallpaper-info:hover{color:var(--accent)}
 
@@ -166,53 +175,40 @@ button,input{font:inherit;color:inherit}
 /* 摄影师名可能很长，署名让位给右侧「换一张」，不换行、超出打点 */
 .bottom-bar .wallpaper-info#wallpaperRefresh{flex:none;white-space:nowrap}
 .bottom-bar a#wallpaperCaption[href]:hover,
-.bottom-bar a#wallpaperCaption[href]:focus-visible{color:var(--accent)}
-:root:not(.dark).wp-bottom-dark .bottom-bar a#wallpaperCaption[href]:hover,
-:root:not(.dark).wp-bottom-dark .bottom-bar a#wallpaperCaption[href]:focus-visible{color:#ffd9a0}
-:root:not(.dark).wp-bottom-light .bottom-bar a#wallpaperCaption[href]:hover,
-:root:not(.dark).wp-bottom-light .bottom-bar a#wallpaperCaption[href]:focus-visible{color:#b3722a}
+.bottom-bar a#wallpaperCaption[href]:focus-visible{color:var(--wp-bottom-accent)}
 :root.dark .bottom-bar a#wallpaperCaption[href]:hover,
 :root.dark .bottom-bar a#wallpaperCaption[href]:focus-visible{color:#ffd9a0}
 
-/* ---------- 11. 壁纸明暗自适应 ----------
-   app.js 采样壁纸在问候区/页脚所在条带的亮度，给 <html> 挂 wp-top-* / wp-bottom-*。
-   默认按浅底初始化；采样到深色背景则切亮字。所有分支都不加文字光晕
-   （大范围模糊阴影在浅底壁纸上是白雾、深底上是黑雾，可读性交给字色对比）。 */
-:root:not(.dark).wp-top-dark .eyebrow,
-:root:not(.dark).wp-top-dark .hero-meta{color:#dce5eb}
-:root:not(.dark).wp-top-dark .hero-block h1{color:#f4f8fa}
-:root:not(.dark).wp-top-dark .hero-meta #clock{color:#fff}
-:root:not(.dark).wp-top-dark .meta-divider{background:rgba(255,255,255,.45)}
-:root:not(.dark).wp-top-dark #weatherText{color:inherit}
-:root:not(.dark).wp-top-dark .status-dot{background:#e8a558}
-:root:not(.dark).wp-top-dark .brand{color:#f4f8fa}
-:root:not(.dark).wp-top-dark .brand-copy small{color:rgba(255,255,255,.72)}
-:root:not(.dark).wp-top-dark .hero-note{color:rgba(255,255,255,.68)}
-:root:not(.dark).wp-top-light .eyebrow{color:#2f3d47}
-:root:not(.dark).wp-top-light .hero-block h1{color:#1b2731}
-:root:not(.dark).wp-top-light .hero-meta{color:#46535e}
-:root:not(.dark).wp-top-light .hero-meta #clock{color:#0f181f}
-:root:not(.dark).wp-top-light .meta-divider{background:rgba(15,24,31,.42)}
-:root:not(.dark).wp-top-light #weatherText{color:#2f3d47}
-:root:not(.dark).wp-top-light .status-dot{background:#d98f3f}
-:root:not(.dark).wp-top-light .hero-note{color:#66717a}
-:root:not(.dark).wp-bottom-dark .bottom-bar{color:rgba(255,255,255,.92)}
-:root:not(.dark).wp-bottom-dark .bottom-bar #wallpaperCaption{color:rgba(255,255,255,.8)}
-:root:not(.dark).wp-bottom-dark .bottom-bar .wallpaper-info{color:rgba(255,255,255,.92)}
-:root:not(.dark).wp-bottom-dark .bottom-bar .wallpaper-info:hover{color:#ffd9a0}
-:root:not(.dark).wp-bottom-light .bottom-bar{color:#4a5761}
-:root:not(.dark).wp-bottom-light .bottom-bar #wallpaperCaption{color:#5c6a75}
-:root:not(.dark).wp-bottom-light .bottom-bar .wallpaper-info{color:#3a4750}
-:root:not(.dark).wp-bottom-light .bottom-bar .wallpaper-info:hover{color:#b3722a}
-:root.dark .bottom-bar{color:rgba(240,246,250,.92)}
+/* ---------- 11. 壁纸文字对比度自适应 ----------
+   app.js 对问候区/页脚的壁纸区域求平均亮度，更新 --wp-* 色值：
+   平均亮度亮 → 整块文字全黑；暗 → 整块全白。一个区域只有一种字色，
+   不加任何文字阴影 / 描边（用户定案，别再往回加）。 */
+:root:not(.dark) .hero-block,
+:root:not(.dark) .brand{color:var(--wp-top-ink)}
+:root:not(.dark) .hero-block .eyebrow,
+:root:not(.dark) .hero-block .hero-meta{color:var(--wp-top-muted)}
+:root:not(.dark) .hero-block h1,
+:root:not(.dark) .hero-meta #clock{color:var(--wp-top-ink)}
+:root:not(.dark) .hero-block .hero-note,
+:root:not(.dark) .brand-copy small{color:var(--wp-top-faint)}
+:root:not(.dark) .hero-block .meta-divider{background:var(--wp-top-divider)}
+:root:not(.dark) .hero-block .status-dot{background:var(--wp-top-accent)}
+/* 顶栏主题切换按钮也跟文字一族：亮壁纸上白字时按钮同样用白 */
+:root:not(.dark) .icon-button{color:var(--wp-top-ink)}
+:root:not(.dark) .bottom-bar{color:var(--wp-bottom-muted)}
+:root:not(.dark) .bottom-bar #wallpaperCaption{color:var(--wp-bottom-faint)}
+:root:not(.dark) .bottom-bar .wallpaper-info{color:var(--wp-bottom-muted)}
+:root:not(.dark) .bottom-bar .wallpaper-info:hover{color:var(--wp-bottom-accent)}
+:root.dark .bottom-bar{color:rgba(255,255,255,.92)}
 :root.dark .bottom-bar .wallpaper-info:hover{color:#ffd9a0}
-:root.dark .hero-note{color:#7d8892}
+:root.dark .hero-note{color:rgba(255,255,255,.78)}
+/* 手机点按高亮（半透明圆角矩形选择框）整体关闭；键盘 focus-visible 的 outline 不受影响 */
+a,button,input,select,textarea,label,[role='button']{-webkit-tap-highlight-color:transparent}
+a:focus,button:focus,[role='button']:focus{outline:0}
 /* 天气链接 hover 提亮：必须带与分支色规则同级的 :not 前缀，否则优先级不够 */
-:root:not(.dark).wp-top-light .weather-link:hover #weatherText,
-:root:not(.dark).wp-top-dark .weather-link:hover #weatherText,
+:root:not(.dark) .weather-link:hover #weatherText,
 :root.dark .weather-link:hover #weatherText,
-:root:not(.dark).wp-top-light .weather-link:focus-visible #weatherText,
-:root:not(.dark).wp-top-dark .weather-link:focus-visible #weatherText,
+:root:not(.dark) .weather-link:focus-visible #weatherText,
 :root.dark .weather-link:focus-visible #weatherText{color:var(--accent)}
 
 /* ---------- 12. 品牌图标：PNG 透明通道做 mask，跟随 currentColor（字色变它跟着变） ---------- */
