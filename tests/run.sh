@@ -61,7 +61,7 @@ fi
 if [ -z "${PY:-}" ]; then PY="$(command -v python3 || true)"; fi
 [ -n "${PY:-}" ] || { echo "❌ 找不到 python3"; exit 1; }
 
-ALL_CASES=(default cached dirty public offline interactive wpfail picfail assets search)
+ALL_CASES=(default cached dirty public offline interactive wpfail picfail assets search ipcross)
 
 CASES=("$@")
 [ ${#CASES[@]} -eq 0 ] && CASES=("${ALL_CASES[@]}")

@@ -68,7 +68,9 @@ button,input{font:inherit;color:inherit}
 .brand-copy small{margin-top:4px;color:var(--muted);font:10px 'DM Mono',monospace;letter-spacing:.04em}
 .topbar-actions{display:flex;align-items:center;gap:17px}
 .icon-button,.text-button,.wallpaper-info,.source-switch{border:0;background:transparent;cursor:pointer}
-.icon-button{width:34px;height:34px;display:grid;place-items:center;transition:color 180ms var(--ease)}
+.icon-button{position:relative;width:34px;height:34px;display:grid;place-items:center;transition:color 180ms var(--ease)}
+/* 主题按钮**不做**角标指示灯（用户定案）：按钮就是浅↔深开关，模式看 title / aria-label，
+   手机上不需要靠一颗小圆点去分辨「自动 / 手动」—— 刷新就回到自动。 */
 .icon-button:hover{opacity:.72}
 .icon-button:focus-visible{outline:1px solid currentColor;outline-offset:4px}
 .icon-button.small{width:29px;height:29px}

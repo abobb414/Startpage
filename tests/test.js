@@ -371,14 +371,44 @@
       document.documentElement.className);
   }
 
-  /* ---------------- 8. 主题 ---------------- */
+  /* 端到端（**必须放在任何改写 STORAGE.coords 的断言之前**）：无头环境里 geolocation
+     被桩成「拒绝」，正是手机上不给定位授权时的真实路径 —— 初始化跑完后应当落盘一份
+     IP 定位结果。ipcross 场景把 IP 归属地换到境外（出口被代理），时区自检必须挡住它，
+     否则「坐标 = 代理出口国」这个静默错误会一路流到主题切换上。 */
+  if (CASE === 'default' || CASE === 'cached' || CASE === 'interactive') {
+    await T_poll(() => readJson(STORAGE.coords, null));   // T_poll 只回布尔，值要另取
+    const T_coords0 = readJson(STORAGE.coords, null);
+    T_ok('拿不到浏览器定位 → 自动改走 IP 定位（城市级坐标已落盘）',
+      !!T_coords0 && T_coords0.src === 'ip' && T_coords0.label === '山西省阳泉市', JSON.stringify(T_coords0));
+  }
+  if (CASE === 'ipcross') {
+    const T_ipCalled = await T_poll(() => (window.__T.calls || []).some((u) => u.includes('api.mir6.com')), 2000);
+    if (T_ipCalled) await T_sleep(600);   // 等这条异步链彻底收敛，再断言「确实没落盘」
+    T_ok('出口被代理到境外：IP 结果被时区自检挡掉 → 不落盘，坐标停在默认城市',
+      T_ipCalled && !localStorage.getItem(STORAGE.coords) && themeCoords().src === 'default',
+      `called=${T_ipCalled} cache=${localStorage.getItem(STORAGE.coords)}`);
+  }
+
+  /* ---------------- 8. 主题：跟随当地日出日落 ----------------
+     两条机制在这里被锁死：
+       · 坐标：拿不到浏览器定位时必须退到 IP 定位，且**时区自洽的校验不能少** ——
+         浏览器出口被代理到境外时，境外的 IP 接口会返回代理所在国，拿它算日出日落
+         等于按另一个半球的时间切主题；
+       · 模式：手动切换只在**本次浏览内**有效（不落盘），刷新后一律回到自动。
+         cached 场景里预置了旧版本的锁定值 dark，就是用来锁这条：必须被忽略并清除。 */
   T_section('主题');
+  if (CASE === 'cached') {
+    T_ok('旧版本残留在 localStorage 里的手动锁定值被忽略且清除（不会一进页面就锁死）',
+      themeMode === 'auto' && localStorage.getItem(STORAGE.themeMode) === null,
+      `mode=${themeMode} stored=${localStorage.getItem(STORAGE.themeMode)}`);
+  }
   T_ok('applyTheme(true) 给根节点加 dark', (() => { applyTheme(true); return document.documentElement.classList.contains('dark'); })());
   T_ok('深色下 theme-color = #11171d',
     document.querySelector('meta[name="theme-color"]').content === '#11171d',
     document.querySelector('meta[name="theme-color"]').content);
-  T_ok('深色下切换按钮无障碍标签正确',
-    els.themeToggle.getAttribute('aria-label') === '切换到浅色主题', els.themeToggle.getAttribute('aria-label'));
+  T_ok('切换按钮的无障碍标签只说它做什么（切换到浅色 / 深色主题）',
+    /^切换到(浅色|深色)主题$/.test(els.themeToggle.getAttribute('aria-label')),
+    els.themeToggle.getAttribute('aria-label'));
   applyTheme(false);
   T_ok('浅色下 theme-color = #ffffff',
     document.querySelector('meta[name="theme-color"]').content === '#ffffff',
@@ -390,6 +420,39 @@
   T_ok('主题值没变时不重建 meta 节点（少一次 DOM 抖动）',
     document.querySelector('meta[name="theme-color"]') === T_metaNode);
 
+  T_ok('IP 定位：归属地与浏览器时区自洽 → 采信，并带上地名', (() => {
+    const T_p = ipPlaceFromPayload({ data: { country: '中国', countryCode: 'CN', province: '山西省', city: '阳泉市' } }, 'Asia/Shanghai');
+    return !!T_p && T_p.city === '阳泉市' && T_p.label === '山西省阳泉市';
+  })());
+  T_ok('IP 定位：时区在中国、IP 却在境外 → 不采信（出口被代理到日本就长这样）',
+    ipPlaceFromPayload({ data: { country: '日本', countryCode: 'JP', province: '东京都', city: '东京' } }, 'Asia/Shanghai') === null);
+  T_ok('IP 定位：接口没给出城市 → 不采信', ipPlaceFromPayload({ data: {} }, 'Asia/Shanghai') === null);
+  T_ok('IP 定位：境外时区不看国别（别国用户照常采信）', (() => {
+    const T_p = ipPlaceFromPayload({ data: { countryCode: 'JP', province: '東京都', city: '新宿区' } }, 'Asia/Tokyo');
+    return !!T_p && T_p.city === '新宿区';
+  })());
+  T_ok('日出日落随坐标变（同一天阳泉比上海晚约 30 分钟，用错城市就会切错点）', (() => {
+    const T_winter = new Date('2026-12-21T12:00:00+08:00');
+    const T_a = sunTimes(T_winter, 37.861188, 113.583285).sunrise.getTime();
+    const T_b = sunTimes(T_winter, DEFAULT_COORDS.lat, DEFAULT_COORDS.lng).sunrise.getTime();
+    return Math.abs(T_a - T_b) > 20 * 60e3;
+  })());
+  T_ok('提示文案：带出该坐标算出的日出日落与地名，且不写「手动/自动/刷新」这类说明', (() => {
+    writeJson(STORAGE.coords, { lat: 37.861188, lng: 113.583285, t: Date.now(), src: 'ip', label: '山西省阳泉市' });
+    themeMode = 'auto';
+    applyTheme(false);
+    const T_clock = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+    const T_want = T_clock.format(sunTimes(new Date(), 37.861188, 113.583285).sunrise);
+    const T_t = els.themeToggle.title;
+    return T_t.includes(`日出 ${T_want}`) && T_t.includes('山西省阳泉市')
+      && !/(手动|自动|刷新)/.test(T_t);
+  })(), els.themeToggle.title);
+  T_ok('主题按钮上没有任何角标指示灯（用户定案：不靠小圆点区分自动/手动）', (() => {
+    const T_after = getComputedStyle(els.themeToggle, '::after');
+    return els.themeToggle.dataset.mode === undefined
+      && ['none', 'normal', ''].includes(T_after.content)
+      && T_after.width !== '5px';
+  })(), `${getComputedStyle(els.themeToggle, '::after').content} / data-mode=${els.themeToggle.dataset.mode}`);
   T_ok('sunTimes：上海夏至日出早于日落且落在 04–06 点', (() => {
     const T_s = sunTimes(new Date('2026-06-21T04:00:00Z'), 31.23, 121.47);
     return T_s.polar === null && T_s.sunrise < T_s.sunset && T_s.sunrise.getHours() >= 3 && T_s.sunrise.getHours() <= 7;
@@ -399,7 +462,7 @@
     const T_night = sunTimes(new Date('2026-12-21T12:00:00Z'), 80, 20);
     return T_day.polar === 'day' && T_day.sunrise === null && T_night.polar === 'night';
   })());
-  T_ok('坐标缓存：非 geo 来源的旧缓存不会被当成定位', (() => {
+  T_ok('坐标缓存：非 geo/ip 来源的旧缓存不会被当成定位', (() => {
     writeJson(STORAGE.coords, { lat: 1, lng: 1, t: Date.now(), src: 'default' });
     const T_c = themeCoords();
     return T_c.lat === DEFAULT_COORDS.lat;
@@ -408,6 +471,10 @@
     writeJson(STORAGE.coords, { lat: 39.9, lng: 116.4, t: Date.now(), src: 'geo' });
     return themeCoords().lat === 39.9;
   })());
+  T_ok('坐标缓存：ip 来源同样算数（多数手机不给定位授权，这是常见路径）', (() => {
+    writeJson(STORAGE.coords, { lat: 37.86, lng: 113.58, t: Date.now(), src: 'ip', label: '山西省阳泉市' });
+    return themeCoords().src === 'ip';
+  })());
   T_ok('坐标缓存：过期后不再采用', (() => {
     writeJson(STORAGE.coords, { lat: 39.9, lng: 116.4, t: Date.now() - 13 * 3600e3, src: 'geo' });
     return themeCoords().lat === DEFAULT_COORDS.lat;
@@ -415,16 +482,35 @@
   localStorage.removeItem(STORAGE.coords);
 
   if (CASE === 'interactive') {
-    localStorage.setItem(STORAGE.themeMode, 'auto');
     themeMode = 'auto';
-    applyTheme(false);
-    els.themeToggle.click();
-    T_ok('手动点主题按钮：锁定为 dark 并落盘',
-      themeMode === 'dark' && localStorage.getItem(STORAGE.themeMode) === 'dark', themeMode);
-    T_ok('锁定后标题不再是「跟随日出日落」',
-      /已手动锁定/.test(els.themeToggle.title), els.themeToggle.title);
-    els.themeToggle.click();
-    T_ok('再点一次回到 light', themeMode === 'light' && !document.documentElement.classList.contains('dark'));
+    applyTheme(false);            // 自动档此刻显示浅色
+    els.themeToggle.click();      // ① 浅色 → 深色（相对当前显示切反面，必有视觉变化）
+    T_ok('点主题按钮①：当前浅色 → 切到深色',
+      themeMode === 'dark' && document.documentElement.classList.contains('dark'), themeMode);
+    T_ok('手动切换**不落盘** —— 刷新后必然回到自动（这是「按地点重判日出日落」的前提）',
+      localStorage.getItem(STORAGE.themeMode) === null, localStorage.getItem(STORAGE.themeMode));
+    T_ok('手动档的提示文案与自动档同构（不写「手动/自动/刷新」这类说明）', (() => {
+      const T_t = els.themeToggle.title;
+      return /^深色 · 日出 \d{2}:\d{2} \/ 日落 \d{2}:\d{2} · /.test(T_t) && !/(手动|自动|刷新)/.test(T_t);
+    })(), els.themeToggle.title);
+    T_ok('手动档的无障碍标签同样只说它做什么',
+      els.themeToggle.getAttribute('aria-label') === '切换到浅色主题',
+      els.themeToggle.getAttribute('aria-label'));
+    T_ok('手动档按钮上同样没有角标', els.themeToggle.dataset.mode === undefined);
+    els.themeToggle.click();      // ② 深色 → 浅色
+    T_ok('点主题按钮②：深色 → 浅色',
+      themeMode === 'light' && !document.documentElement.classList.contains('dark'), themeMode);
+    /* 手动档期间时间不得抢走控制权：故意把手动档设成「与自动档应当给出的相反」，
+       再跑一次每分钟的检查 —— 只要 tickTheme 抢权，外观就会被改回去。 */
+    const T_auto = autoDark();
+    themeMode = T_auto ? 'light' : 'dark';
+    applyTheme(!T_auto);
+    tickTheme();
+    T_ok('手动档期间 tickTheme 不介入：外观仍停在手动挑的那一档（不会被自动改回）',
+      document.documentElement.classList.contains('dark') === !T_auto,
+      `auto=${T_auto} 显示深色=${document.documentElement.classList.contains('dark')}`);
+    themeMode = 'auto';           // 还原，免得影响后续断言
+    applyTheme(T_auto);
   }
 
   /* ---------------- 8b. 布局：卡片高度由内容驱动 ----------------
