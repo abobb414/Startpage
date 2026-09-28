@@ -231,15 +231,27 @@ a:focus,button:focus,[role='button']:focus{outline:0}
      justify-content 用 safe center：内容真的放不下时退回顶对齐而不是两端被裁。
      卡片内部放不下的列表在卡片里滚（便签/热点），页脚永远完整可见。 */
   .app-shell{height:100vh;height:100svh;display:flex;flex-direction:column;overflow:hidden}
-  .topbar,.bottom-bar{flex:none}
+  /* 顶栏 / 页脚 / 问候区 / 搜索框一律保持自然高度，不被压缩 ——
+     改「卡片高度由内容决定」之后，负空间的分配权重跟着变了：矮窗口下
+     搜索框会被挤成一条线（62px → 33px）。负空间只许卡片区吸收（不够就卡内滚），
+     其余区块一次都不许被压。 */
+  .topbar,.bottom-bar,.hero-block,.search-panel{flex:none}
   /* ⚠️ flex 子项 + margin:auto 会阻止 stretch、缩成内容宽（页脚两项会挤到中间），
      必须显式撑满，space-between 才能左右铺开。 */
   .workspace,.bottom-bar{width:100%}
   .workspace{flex:1;min-height:0;display:flex;flex-direction:column;justify-content:safe center;margin-top:0;padding-bottom:0}
-  .content-grid{flex:1;min-height:0}
+  /* 卡片高度由**内容**决定，不再撑满视口剩余高度。
+     撑满时视口越高、卡片底部那段空白越大（热点固定 5 条，多出来的高度全变成卡片里的空），
+     窗口一高就是一大片白。改 flex:0 1 auto 后高度跟着内容走；两个卡片仍同排，
+     grid 默认 stretch → 自动等高，于是便签天然与热点对齐。
+     内容真的放不下时才收缩（flex-shrink:1 + min-height:0），退回卡内滚动。 */
+  .content-grid{flex:0 1 auto;min-height:0}
   .surface{min-height:0;display:flex;flex-direction:column;overflow:hidden}
   .surface-head,.note-form,.surface-foot{flex:none}
-  .notes-list,.trend-list{flex:1;min-height:0;overflow:auto}
+  /* basis 必须是 auto（= 内容高），不能是 0：卡片高度由内容撑起时，flex-basis:0%
+     会让列表先塌成 0 高，整张卡片只剩页头与页脚。grow 保留 —— 便签被对齐拉高时，
+     多出来的高度由列表吸收，页脚仍然贴底。 */
+  .notes-list,.trend-list{flex:1 1 auto;min-height:0;overflow:auto}
   /* 卡片内滚的滚动条：极细、随主题淡入，不抢视线 */
   .notes-list::-webkit-scrollbar,.trend-list::-webkit-scrollbar{width:4px}
   .notes-list::-webkit-scrollbar-thumb,.trend-list::-webkit-scrollbar-thumb{background:rgba(127,140,150,.28);border-radius:2px}

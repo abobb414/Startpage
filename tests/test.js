@@ -427,6 +427,41 @@
     T_ok('再点一次回到 light', themeMode === 'light' && !document.documentElement.classList.contains('dark'));
   }
 
+  /* ---------------- 8b. 布局：卡片高度由内容驱动 ----------------
+     断言锁「机制」而不是某一屏的像素数字：
+       · 桌面（≥701px）卡片高度必须由内容驱动：.content-grid 不能 grow，
+         否则视口越高、卡片底部那段没内容的空白越大（实测 1920×1150 下 307px）。
+       · 壁纸层仍须盖满视口（含上下各 140px 回弹外伸），别让后续改动把高度改没了。 */
+  T_section('布局');
+  const T_h = (T_sel) => { const T_el = document.querySelector(T_sel); return T_el ? +T_el.getBoundingClientRect().height.toFixed(1) : null; };
+  const T_wpRect = document.querySelector('.wallpaper').getBoundingClientRect();
+  T_ok('壁纸层盖满视口（含上下各 140px 回弹外伸）',
+    T_wpRect.top <= 0.5 && T_wpRect.bottom >= innerHeight - 0.5,
+    `top=${T_wpRect.top} bottom=${T_wpRect.bottom} vh=${innerHeight}`);
+
+  if (innerWidth >= 701) {
+    T_ok('桌面 .content-grid 不 grow —— 卡片高度由内容决定',
+      getComputedStyle(document.querySelector('.content-grid')).flexGrow === '0',
+      getComputedStyle(document.querySelector('.content-grid')).flexGrow);
+    const T_hTrend = document.querySelector('.trends-surface').getBoundingClientRect().height;
+    const T_hNotes = document.querySelector('.notes-surface').getBoundingClientRect().height;
+    T_ok('便签与今日热点等高（对齐）', Math.abs(T_hTrend - T_hNotes) < 1,
+      `trends=${T_hTrend.toFixed(1)} notes=${T_hNotes.toFixed(1)}`);
+    /* ⚠️ 本测试集自己的结果节点就挂在 body 上（#__results），它会把文档撑高
+       （实测 469 → 513），直接量 documentElement.scrollHeight 必然假失败。
+       量之前先藏起来 —— 只是量一下，量完立刻恢复，结果节点本身照常写。 */
+    T_out.style.display = 'none';
+    const T_ch = document.documentElement.scrollHeight;
+    T_out.style.display = '';
+    T_ok('锁一屏：桌面不出现页面级滚动条', T_ch <= innerHeight + 1,
+      `scrollH=${T_ch} vh=${innerHeight}`
+      + ` | topbar=${T_h('.topbar')} hero=${T_h('.hero-block')} search=${T_h('.search-panel')}`
+      + ` grid=${T_h('.content-grid')} bottom=${T_h('.bottom-bar')}`);
+  } else {
+    T_ok('窄屏不套用锁一屏（卡片各自随内容）',
+      getComputedStyle(document.querySelector('.content-grid')).flexGrow !== '0', innerWidth);
+  }
+
   /* ---------------- 9. 脏数据容错（专测） ---------------- */
   if (CASE === 'dirty') {
     T_section('脏数据容错');
