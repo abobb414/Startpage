@@ -16,6 +16,13 @@
 /* ---------- 2. 设计变量 ---------- */
 :root{
   --bg:#f2f4f5; --ink:#17212b; --muted:#74808b; --faint:#aab4bd;
+  /* 工具栏底色（iOS / Android 浏览器上下两条栏读的就是它）。
+     兜底跟随 --bg：浅色 #f2f4f5、深色 #11171d 自动切，等于改动前的行为；
+     浅色模式下 app.js 采完壁纸会把它换成壁纸均值色，工具栏才不再发白。 */
+  --chrome-tint:var(--bg);
+  /* 壁纸层自己的兜底底色（图片加载前露出的那层）。单独一个变量是因为
+     深色模式要它保持原值 #d7e0e5 不动 —— 用户定案：深色模式没有任何问题。 */
+  --chrome-tint-wallpaper:#d7e0e5;
   --line:rgba(23,33,43,.13); --line-strong:rgba(23,33,43,.23);
   --surface:rgba(249,251,252,.95); --solid:#f9fbfc;
   --accent:#3d718f; --accent-soft:rgba(61,113,143,.1);
@@ -30,6 +37,9 @@
 }
 :root.dark{
   --bg:#11171d; --ink:#e7edf1; --muted:#99a6b0; --faint:#64717c;
+  /* 贴边 fixed 的 .wallpaper 自身底色必须跟主题底一致：现在还是 #d7e0e5 浅灰，
+     系统取到浅色 ⇒ 深色模式工具栏照样发白。这里是第 38 轮修过、后来被撤掉的规则。 */
+  --chrome-tint-wallpaper:#11171d;
   --line:rgba(231,237,241,.13); --line-strong:rgba(231,237,241,.25);
   --surface:rgba(22,30,37,.95); --solid:#182129;
   --accent:#9ac5d7; --accent-soft:rgba(154,197,215,.12);
@@ -38,7 +48,7 @@
 
 /* ---------- 3. 基础 ---------- */
 *{box-sizing:border-box}
-html,body{margin:0;min-width:320px;min-height:100%;font-family:Manrope,system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+html,body{margin:0;min-width:320px;min-height:100%;font-family:Manrope,system-ui,sans-serif;color:var(--ink);background:var(--chrome-tint)}
 body{min-height:100vh}
 button,input{font:inherit;color:inherit}
 
@@ -46,7 +56,7 @@ button,input{font:inherit;color:inherit}
    不用 100dvh/position:fixed 锁整页：整页自然滚动是本页手感的一部分。
    min-height 补 100svh —— iOS 上 100vh 按工具栏收起后的「大视口」算，
    工具栏展开时整页会高出一截、把页脚压到可视区外。 */
-.app-shell{position:relative;min-height:100vh;min-height:100svh;background:var(--bg)}
+.app-shell{position:relative;min-height:100vh;min-height:100svh;background:var(--chrome-tint)}
 .topbar,.workspace,.bottom-bar{position:relative;z-index:1}
 
 /* ---------- 5. 壁纸层 ----------
@@ -54,7 +64,7 @@ button,input{font:inherit;color:inherit}
    只锚定 top 一端 + 固定高度：双端锚定（top/bottom 同时设）会被 iOS 工具栏收展
    时的视口变化拉伸，壁纸会跟着动。上下各外伸 140px 即为回弹留量。 */
 .wallpaper,.wallpaper-wash{position:fixed;top:-140px;left:0;right:0;width:100%;height:calc(100vh + 280px);pointer-events:none}
-.wallpaper{background:#d7e0e5 center/cover no-repeat;filter:saturate(.82);transform:scale(1.02);transition:background-image 600ms var(--ease)}
+.wallpaper{background-color:var(--chrome-tint-wallpaper);background-position:center;background-size:cover;background-repeat:no-repeat;filter:saturate(.82);transform:scale(1.02);transition:background-image 600ms var(--ease),background-color 600ms var(--ease)}
 .wallpaper-wash{background:transparent}
 :root.dark .wallpaper-wash{background:linear-gradient(180deg,rgba(9,13,17,.68),rgba(9,13,17,.78) 55%,rgba(9,13,17,.94))}
 
@@ -265,4 +275,10 @@ a:focus,button:focus,[role='button']:focus{outline:0}
   /* 手机端去掉壁纸那 2% 缩放：整屏 fixed + transform 会单独提升为合成层，
      滚动重栅格化时会有「跳一下／像放大」的观感；cover 本身已铺满 */
   .wallpaper{transform:none}
+  /* 🔴 手机端**不要**锁文档滚动。2026-09-28 试过：`@supports(-webkit-touch-callout:none)` 里
+     锁住 body 滚动（height:100% + overflow:hidden + 外壳内滚），确实能让正文不再从底部玻璃带
+     下透出，但代价是 **iOS 工具栏再也不自动收起**（自动收起只认页面级滚动，卡片内滚不算；
+     `overflow:hidden` / `height:100%` 会让浏览器判定「无可滚内容」而直接不触发）。
+     两者在 iOS 上绑定，不可兼得 —— 用户 2026-09-28 拍板：**选「工具栏能自动收起」**，
+     接受滚动过程中正文短暂穿过玻璃（所有 iOS 网页皆如此）。别再提议锁滚动。 */
 }

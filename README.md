@@ -252,9 +252,9 @@ cd tests
 │   └── brand-home.png
 ├── tests/                      # 无头浏览器回归测试台（详见 tests/README.md）
 ├── docs/                       # README 预览图
-├── favicon.svg                 # 矢量（由 100px 位图分层重建，任意尺寸清晰）
-├── favicon.png / .ico          # 1024×1024 PNG + 16→256 七尺寸 ICO
-├── apple-touch-icon.png        # 180×180，iOS 主屏图标
+├── favicon.svg                 # 内嵌 128px 位图（非描摹，与 ICO/PNG 同源同版）
+├── favicon.png / .ico          # 1024×1024 PNG + 16→256 七尺寸 ICO（均由 icons8 原生 1600px 源等比缩放）
+├── apple-touch-icon.png        # 180×180，iOS 主屏图标（#f4f6f8 不透明底）
 └── robots.txt
 ```
 

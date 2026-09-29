@@ -390,6 +390,29 @@
   T_ok('主题值没变时不重建 meta 节点（少一次 DOM 抖动）',
     document.querySelector('meta[name="theme-color"]') === T_metaNode);
 
+  /* 工具栏按壁纸着色：浅色下写壁纸均值色，深色下完全不参与（用户定案：深色没问题，别动） */
+  const T_tint = () => document.documentElement.style.getPropertyValue('--chrome-tint').trim();
+  const T_tintWp = () => document.documentElement.style.getPropertyValue('--chrome-tint-wallpaper').trim();
+  const T_meta = () => document.querySelector('meta[name="theme-color"]').content;
+  writeChromeTint({ r: 200, g: 150, b: 100 });
+  T_ok('浅色 + 壁纸均值色 → --chrome-tint 与 theme-color 同时写成该色（RGB 取整转 hex）',
+    T_tint() === '#c89664' && T_meta() === '#c89664', `${T_tint()} / ${T_meta()}`);
+  T_ok('壁纸层的兜底底色也同步（图片加载前露出的那层）',
+    T_tintWp() === '#c89664', T_tintWp());
+  applyTheme(true);
+  T_ok('深色下两个着色变量内联都被撤掉（回落 CSS 默认值，不参与着色）',
+    T_tint() === '' && T_tintWp() === '', `${T_tint() || '(空)'} / ${T_tintWp() || '(空)'}`);
+  T_ok('深色下 theme-color 仍是写死的 #11171d', T_meta() === '#11171d', T_meta());
+  applyTheme(false);
+  T_ok('切回浅色 → 用缓存的均值色自动恢复，不必重新采样',
+    T_tint() === '#c89664' && T_meta() === '#c89664', `${T_tint()} / ${T_meta()}`);
+  T_ok('单通道 < 16 时 hex 补零，不产出 5 位色值',
+    (() => {
+      writeChromeTint({ r: 8, g: 8, b: 8 });
+      return T_tint() === '#080808' && T_meta() === '#080808';
+    })(), T_tint());
+  writeChromeTint({ r: 200, g: 150, b: 100 });
+
   T_ok('sunTimes：上海夏至日出早于日落且落在 04–06 点', (() => {
     const T_s = sunTimes(new Date('2026-06-21T04:00:00Z'), 31.23, 121.47);
     return T_s.polar === null && T_s.sunrise < T_s.sunset && T_s.sunrise.getHours() >= 3 && T_s.sunrise.getHours() <= 7;

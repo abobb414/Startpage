@@ -693,6 +693,42 @@ function writeTone(region, result) {
   els.root.classList.toggle(`wp-${region}-light`, background === 'light');
 }
 
+/* ---------- 11b. 工具栏按壁纸着色 ----------
+   iOS 26 的 Safari 不再读 meta theme-color，改成取「视口边缘那层元素的 background-color」；
+   顶栏和页脚都是透明的，往下就是壁纸层和 .app-shell，底色一直是 --bg（浅灰），
+   系统取到浅灰 → 工具栏发白，网页看着像浮在两条白栏之间。
+   修法：把壁纸均值色写进那几层的底色（see styles.css 的 --chrome-tint），
+   系统不管取到哪一层，拿到的都是跟壁纸同调的颜色。
+   深色模式不参与 —— 底色本来就是深的，工具栏跟它一致（用户定案：深色没问题，别动）。 */
+let wallpaperAverage = null;   /* 最近一次采到的壁纸均值色；切主题时用它重写 */
+
+function rgbToHex(c) {
+  const hex = (v) => Math.max(0, Math.min(255, Math.round(v))).toString(16).padStart(2, '0');
+  return `#${hex(c.r)}${hex(c.g)}${hex(c.b)}`;
+}
+
+function writeChromeTint(average) {
+  if (average) wallpaperAverage = average;
+  const dark = els.root.classList.contains('dark');
+  const tint = !dark && wallpaperAverage ? rgbToHex(wallpaperAverage) : '';
+  /* 深色 / 未采样：撤掉内联值，交回 CSS 的 var(--bg) 与壁纸层原底色，与改动前逐像素一致 */
+  ['--chrome-tint', '--chrome-tint-wallpaper'].forEach((name) => {
+    if (tint) els.root.style.setProperty(name, tint);
+    else els.root.style.removeProperty(name);
+  });
+
+  const color = dark ? '#11171d' : (tint || '#ffffff');
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta && meta.content === color) return;
+  if (meta) meta.content = color;
+  else {
+    const created = document.createElement('meta');
+    created.name = 'theme-color';
+    created.content = color;
+    document.head.appendChild(created);
+  }
+}
+
 function sampleWallpaperTone(url) {
   if (url) lastWallpaperUrl = url;
   const target = lastWallpaperUrl;
@@ -740,6 +776,18 @@ function sampleWallpaperTone(url) {
         }
         return lumas;
       };
+      /* 同一块区域的「平均色」（sRGB 直接平均，不做线性化 —— 这里要的是肉眼看到的
+         那个颜色，不是亮度）。给工具栏着色用，取整张 = 壁纸均值色。 */
+      const averageColorOf = (x0, x1, y0, y1) => {
+        const colA = Math.max(0, Math.min(CW - 1, Math.floor(x0 * CW)));
+        const colB = Math.max(colA + 1, Math.min(CW, Math.ceil(x1 * CW)));
+        const rowA = Math.max(0, Math.min(CH - 1, Math.floor(y0 * CH)));
+        const rowB = Math.max(rowA + 1, Math.min(CH, Math.ceil(y1 * CH)));
+        const data = ctx.getImageData(colA, rowA, colB - colA, rowB - rowA).data;
+        let r = 0; let g = 0; let b = 0; let n = 0;
+        for (let i = 0; i < data.length; i += 4) { r += data[i]; g += data[i + 1]; b += data[i + 2]; n += 1; }
+        return n ? { r: r / n, g: g / n, b: b / n } : null;
+      };
       /* 文字实际占据的矩形。块级元素的 getBoundingClientRect 给的是「整栏容器宽度」
          （撑满 1030px），不是文字渲染出来的那一小截宽 —— 必须用 Range 罩住内容节点，
          否则窗口根本没变窄，等于没修。 */
@@ -782,6 +830,8 @@ function sampleWallpaperTone(url) {
       );
       writeTone('top', scoreTone(lumasOf(...topWindow)));
       writeTone('bottom', scoreTone(lumasOf(...toWindow(unionRect('.bottom-bar', false), 0.01, 0.02))));
+      /* 工具栏着色：整张壁纸的均值色，一次采样两用，不额外加载图片 */
+      writeChromeTint(averageColorOf(0, 1, 0, 1));
       lastToneRatio = vw / vh;
     } catch { /* 画布被跨域污染时保持当前深浅，不做切换 */ }
   };
@@ -870,21 +920,12 @@ function applyTheme(dark) {
   els.themeToggle.setAttribute('aria-label', dark ? '切换到浅色主题' : '切换到深色主题');
   els.themeToggle.title = `${dark ? '深色' : '浅色'} · ${themeMode === 'auto' ? '跟随日出日落' : '已手动锁定'}`;
 
-  /* theme-color 同步：iOS Safari 顶/底栏的颜色读这个 meta。
-     ⚠️ 两个雷区：
+  /* 工具栏着色跟着主题走：深色 = 原样（#11171d），浅色 = 壁纸均值色。
+     ⚠️ 两个雷区（沿用）：
      ① 绝不用「改一下再改回来」的闪烁 hack —— auto 模式下 applyTheme 每分钟都可能被调，
         工具栏会跟着反复闪，这就是「深色模式抽风」的由来；
      ② 值没变就别动 DOM（重建 meta 节点会让 WebKit 重新读一遍工具栏颜色，是没必要的抖动）。 */
-  const color = dark ? '#11171d' : '#ffffff';
-  const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta && meta.content === color) return;
-  if (meta) meta.content = color;
-  else {
-    const created = document.createElement('meta');
-    created.name = 'theme-color';
-    created.content = color;
-    document.head.appendChild(created);
-  }
+  writeChromeTint();
 }
 function initTheme() {
   applyTheme(themeMode === 'auto' ? autoDark() : themeMode === 'dark');
