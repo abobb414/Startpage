@@ -28,7 +28,11 @@
         { id: 'n2', text: '写周报', done: true },
         { id: 'n3', text: '去跑步', done: false },
       ]),
+      // 旧版本残留的手动锁定值：新版主题不做持久化，必须忽略它并把它删掉
+      //（否则老用户升级后一进来就被锁在深色，再也不跟随日出日落）
       'start-local-theme-mode-v1': 'dark',
+      // IP 定位结果也在 12 小时缓存里：命中就不该再打 IP 接口（cached 场景断言零网络请求）
+      'start-local-coords-v1': JSON.stringify({ lat: 37.861188, lng: 113.583285, t: Date.now(), src: 'ip', label: '山西省阳泉市' }),
       'start-local-wallpaper-v2': JSON.stringify({
         date: day(), offset: 0,
         url: 'img/white.png', title: 'Unsplash · 白图（缓存）',
@@ -59,6 +63,8 @@
     picfail: {},
     // 图标 / 资源引用核对（纯 DOM 断言，不碰网络）
     assets: {},
+    // IP 定位返回境外归属地（出口被代理）—— 时区自检必须把它挡掉
+    ipcross: {},
   };
 
   const seed = SEEDS[CASE] || {};
@@ -131,23 +137,42 @@
     if (u.includes('/item/')) {
       return json({ id: Number(target.pathname.split('/').pop().replace('.json', '')), title: `HN 第 ${target.pathname} 条`, url: 'https://example.com/hn' });
     }
+    if (u.includes('api.mir6.com')) {
+      /* IP 定位兜底（浏览器定位拿不到时的第二顺位）。默认给一个境内结果，
+         用来验证「时区自洽 → 采用」；ipcross 场景故意返回境外归属地，
+         用来验证时区自检会把它挡掉（代理出口污染）。 */
+      const foreign = CASE === 'ipcross';
+      return json({
+        code: 200,
+        data: {
+          ip: '1.2.3.4',
+          country: foreign ? '日本' : '中国',
+          countryCode: foreign ? 'JP' : 'CN',
+          province: foreign ? '东京都' : '山西省',
+          city: foreign ? '东京' : '阳泉市',
+          isp: '测试运营商',
+        },
+      });
+    }
     throw new TypeError('unexpected request: ' + u);
   };
 
-  /* 天气走 JSONP（<script> 注入），fetch 桩拦不到；而 app.js 里 jsonp 是函数声明，
-     直接 window.jsonp = ... 会被后来的声明覆盖。改为从更底层的
-     document.head.appendChild 拦截：认出彩云的 script 就立刻回调桩数据，不发真请求。 */
+  /* 天气与「IP 定位的城市名 → 经纬度」都走 JSONP（<script> 注入），fetch 桩拦不到；
+     而 app.js 里 jsonp 是函数声明，直接 window.jsonp = ... 会被后来的声明覆盖。改为从更底层的
+     document.head.appendChild 拦截：认出彩云的 script 就立刻回调桩数据，不发真请求。
+     两条路径按 pathname 区分：/place 回地名结果，其余回天气实况。 */
   const realAppend = document.head.appendChild.bind(document.head);
   document.head.appendChild = function (node) {
     if (node && node.tagName === 'SCRIPT' && /caiyunapp\.com/.test(node.src || '')) {
-      const cb = new URL(node.src).searchParams.get('callback');
+      const src = new URL(node.src);
+      const cb = src.searchParams.get('callback');
+      const isPlace = /\/place/.test(src.pathname);
       setTimeout(() => {
         if (CASE === 'offline') { if (node.onerror) node.onerror(); return; }
         if (typeof window[cb] === 'function') {
-          window[cb]({
-            status: 'ok',
-            result: { realtime: { skycon: 'LIGHT_RAIN', temperature: 23.4, apparent_temperature: 25.6, humidity: 0.62 } },
-          });
+          window[cb](isPlace
+            ? { status: 'ok', places: [{ name: '中国 山西省 阳泉市 阳泉', location: { lat: 37.861188, lng: 113.583285 } }] }
+            : { status: 'ok', result: { realtime: { skycon: 'LIGHT_RAIN', temperature: 23.4, apparent_temperature: 25.6, humidity: 0.62 } } });
         }
       }, 0);
       return node;   // 不真正插入 DOM，避免真打彩云接口

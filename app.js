@@ -62,7 +62,20 @@ const CAIYUN_SKYCON = {
   FOG: '雾', LIGHT_SNOW: '小雪', MODERATE_SNOW: '中雪', HEAVY_SNOW: '大雪', STORM_SNOW: '暴雪',
   DUST: '浮尘', SAND: '沙尘', WIND: '大风',
 };
-const DEFAULT_COORDS = { lng: 121.4737, lat: 31.2304 };
+/* 坐标的获取顺序：① 浏览器定位（最准，需要授权）→ ② IP 定位（无需授权，城市级）
+   → ③ 下面这个默认城市（兜底）。
+   ⚠️ IP 定位**必须用国内可直连的接口**。很多用户（包括本项目这台机器）把境外流量交给
+   代理，境外 IP 接口只会看到代理出口的国家 —— 拿那个坐标算日出日落，等于按另一个
+   半球的时间切主题。所以这里挑的是境内直连、且带 CORS 的接口，并配一道时区自检
+   （见 ipPlaceFromPayload）：时区在中文区、IP 却说在境外，一律不采信。 */
+const IP_GEO_API = 'https://api.mir6.com/api/ip?type=json';
+const IP_GEO_TIMEOUT = 5000;
+// 城市名 → 经纬度：复用天气那个彩云 token。该接口不支持 CORS（带 Origin 直接 403），只能走 JSONP。
+const CAIYUN_PLACE = 'https://api.caiyunapp.com/v2/place';
+// 中文区时区 / 国家代码，用于「IP 归属地与浏览器时区是否自洽」的校验
+const ZH_TIMEZONES = ['Asia/Shanghai', 'Asia/Urumqi', 'Asia/Chongqing', 'Asia/Harbin', 'Asia/Kashgar', 'PRC', 'Asia/Macau', 'Asia/Hong_Kong', 'Asia/Taipei'];
+const ZH_COUNTRIES = ['CN', 'HK', 'MO', 'TW'];
+const DEFAULT_COORDS = { lng: 121.4737, lat: 31.2304, src: 'default', label: '默认城市' };
 
 // 降级壁纸池：全部是 Unsplash 精选。主源是自有 API 的 Unsplash 每日一图（resolveWallpaper），
 // 接口不可用、或返回的图「采不了样」时才回落到这里 —— 全站不引入 Unsplash 以外的图源。
@@ -108,8 +121,8 @@ function engineIcon(key) {
 
 const STORAGE = {
   notes: 'start-local-notes-v1',
-  theme: 'start-local-theme-v1',          // 旧键，仅用于一次性迁移
-  themeMode: 'start-local-theme-mode-v1',
+  theme: 'start-local-theme-v1',          // 旧键：只用于清理（主题不再持久化）
+  themeMode: 'start-local-theme-mode-v1', // 旧键：只用于清理（同上）
   coords: 'start-local-coords-v1',
   engine: 'start-local-engine-v1',
   wallpaper: 'start-local-wallpaper-v2',
@@ -120,6 +133,7 @@ const STORAGE = {
 
 function readText(key) { try { return localStorage.getItem(key); } catch { return null; } }
 function writeText(key, value) { try { localStorage.setItem(key, value); } catch { /* 存不下就算了 */ } }
+function removeText(key) { try { localStorage.removeItem(key); } catch { /* 删不掉就算了 */ } }
 function readJson(key, fallback) {
   const raw = readText(key);
   if (raw === null || raw === undefined) return fallback;
@@ -500,7 +514,7 @@ function setWeatherIcon(skycon) {
    getCurrentPosition —— 旧写法只读 permissions 状态、从不发起请求，首次访问时状态停在
    'prompt'，于是直接返回默认城市坐标：授权框永远不会弹，用户永远拿不到自己的位置。
    返回 null 表示这次没拿到真实位置，由调用方决定怎么回落。 */
-async function resolveCoords() {
+async function gpsCoords() {
   if (!navigator.geolocation) return null;
   try {
     if (navigator.permissions?.query) {
@@ -520,6 +534,49 @@ async function resolveCoords() {
     if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
     return { lat, lng };
   } catch { return null; }           // 拒绝 / 超时 / 系统定位服务不可用
+}
+
+/* IP 定位第 ① 步：解析接口返回的省 / 市，并做「时区 ↔ IP 归属地」自检（纯函数，便于测试）。
+   返回 null 有两种原因：接口没给出城市，或两者互相矛盾 —— 后者说明浏览器的出口被代理到了
+   境外（本机默认网关就是 OpenClash，境外流量走日本），此时坐标是代理所在地，绝不能采用。 */
+function ipPlaceFromPayload(payload, timeZone) {
+  const data = payload && payload.data;
+  const city = String((data && data.city) || '').trim();
+  if (!city) return null;
+  const country = String((data && data.countryCode) || '').toUpperCase();
+  if (ZH_TIMEZONES.includes(timeZone) && country && !ZH_COUNTRIES.includes(country)) return null;
+  return { city, label: `${String((data.province) || '').trim()}${city}` };
+}
+/* IP 定位第 ② 步：城市名 → 经纬度（彩云 place，JSONP）。任何一步失败都返回 null，
+   由调用方回落到默认城市 —— 宁可用兜底坐标，也不能拿一个错城市的时刻去切主题。 */
+async function ipCoords() {
+  const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone || '';
+  const place = ipPlaceFromPayload(await fetchJson(IP_GEO_API, IP_GEO_TIMEOUT), timeZone);
+  if (!place) return null;
+  const payload = await jsonp(
+    `${CAIYUN_PLACE}?query=${encodeURIComponent(place.city.replace(/市$/, ''))}&token=${CAIYUN_TOKEN}&lang=zh_CN`,
+    6000,
+  );
+  const hit = payload && Array.isArray(payload.places) && payload.places[0];
+  const lat = Number(hit && hit.location && hit.location.lat);
+  const lng = Number(hit && hit.location && hit.location.lng);
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+  return { lat, lng, src: 'ip', label: place.label };
+}
+
+/* 浏览器定位优先，失败再退到 IP 定位。返回值带上来源与地名，供提示文案区分
+   「按本机定位 / 按 IP 定位（山西省阳泉市）/ 默认城市」。
+   IP 结果先查 12 小时内的缓存：浏览器定位每次刷新都会问（浏览器自己有 maximumAge），
+   而 IP 接口没必要同一台设备一天问好几遍 —— 不给定位授权的手机上这是每次加载的两个请求。 */
+async function resolveCoords() {
+  const gps = await gpsCoords();
+  if (gps) return { ...gps, src: 'geo', label: '本机定位' };
+  const cached = readJson(STORAGE.coords, null);
+  const reusable = cached && cached.src === 'ip'
+    && Date.now() - Number(cached.t) < 12 * 3600e3
+    && Number.isFinite(cached.lat) && Number.isFinite(cached.lng);
+  if (reusable) return cached;
+  try { return await ipCoords(); } catch { return null; }
 }
 // 定位一次就够：天气与「日出日落自动主题」共用同一个 promise，避免连着申请两次 GPS。
 let coordsPending = null;
@@ -888,37 +945,57 @@ function sunTimes(date, lat, lng) {
   return { sunrise: fromJulian(noon - H), sunset: fromJulian(noon + H), polar: null };
 }
 
-// 主题模式：auto（默认，跟日出日落）/ light / dark（用户点过按钮后锁定）。
-// 旧键 STORAGE.theme 里若存着 light / dark，迁移成锁定模式，不丢既有偏好。
-let themeMode = (() => {
-  const saved = readText(STORAGE.themeMode);
-  if (saved === 'auto' || saved === 'light' || saved === 'dark') return saved;
-  const legacy = readText(STORAGE.theme);
-  return legacy === 'light' || legacy === 'dark' ? legacy : 'auto';
-})();
+// 主题模式：auto（默认，跟当地日出日落）/ light / dark（用户点过一次按钮）。
+// 手动只在本次浏览内有效、不落盘 —— 刷新后一律回到 auto，按地点与时间重判（用户定案）。
+// 顺手删掉旧版本残留的锁定值，否则升过级的老用户会被永久锁在旧档。
+let themeMode = 'auto';
+removeText(STORAGE.themeMode);
+removeText(STORAGE.theme);
 
 // 坐标优先用 12 小时内的缓存；没有缓存时先用默认城市的坐标「同步」判一次，
 // 避免「先白后黑」的闪屏 —— 真实定位由 syncThemeLocation() 异步补上后再重判。
-// 只认 src === 'geo' 的缓存：否则一旦写进过默认城市坐标，会被当成有效定位用满 12 小时。
+// 只认 src 为 geo / ip 的缓存：否则一旦写进过默认城市坐标，会被当成有效定位用满 12 小时。
+const COORDS_SOURCES = ['geo', 'ip'];
 function themeCoords() {
   const cached = readJson(STORAGE.coords, null);
-  const fresh = cached && cached.src === 'geo' && Date.now() - Number(cached.t) < 12 * 3600e3;
+  const fresh = cached && COORDS_SOURCES.includes(cached.src) && Date.now() - Number(cached.t) < 12 * 3600e3;
   return fresh && Number.isFinite(cached.lat) && Number.isFinite(cached.lng) ? cached : DEFAULT_COORDS;
 }
-// 日出后、日落前算白天，其余算夜晚；晨昏各留 30 分钟缓冲，免得天还没亮屏幕先白。
+// 当天的日出日落（含坐标来源与地名），主题判定与提示文案共用同一份计算。
+function todaySun() {
+  const { lat, lng, src, label } = themeCoords();
+  return { ...sunTimes(new Date(), lat, lng), src: src || 'default', label: label || DEFAULT_COORDS.label };
+}
+// 日出前 30 分钟（民用晨光）转浅色、日落后 30 分钟（民用暮光结束）转深色 —— 天色先于人眼
+// 感知变化，卡在日出日落那一秒会让屏幕在天还没亮透时就白、天还有余光时就黑。
 const SUN_BUFFER = 30 * 60e3;
 function autoDark() {
-  const { lat, lng } = themeCoords();
-  const sun = sunTimes(new Date(), lat, lng);
+  const sun = todaySun();
   if (sun.polar === 'day') return false;
   if (sun.polar === 'night') return true;
   const now = Date.now();
   return now < sun.sunrise.getTime() - SUN_BUFFER || now >= sun.sunset.getTime() + SUN_BUFFER;
 }
+const SUN_CLOCK = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
+// 提示文案只说「现在是什么色 + 当地今天几点日出日落 + 坐标哪来的」，手动档与自动档同构。
+// **不写「手动 / 自动 / 再点会切到哪 / 刷新会怎样」这类说明**（用户定案）：
+// 切换是手动、刷新回自动，行为本身就直白，用不着在按钮上再讲一遍；
+// aria-label 也只说这个按钮做什么。角标指示灯同样不做。
+function paintThemeHint(dark) {
+  const sun = todaySun();
+  const place = ` · ${sun.label}`;
+  els.themeToggle.setAttribute('aria-label', `切换到${dark ? '浅色' : '深色'}主题`);
+  if (sun.polar === 'day') {
+    els.themeToggle.title = `浅色 · 当地极昼，全天有日光${place}`;
+  } else if (sun.polar === 'night') {
+    els.themeToggle.title = `深色 · 当地极夜，全天无日光${place}`;
+  } else {
+    els.themeToggle.title = `${dark ? '深色' : '浅色'} · 日出 ${SUN_CLOCK.format(sun.sunrise)} / 日落 ${SUN_CLOCK.format(sun.sunset)}${place}`;
+  }
+}
 function applyTheme(dark) {
   els.root.classList.toggle('dark', dark);
-  els.themeToggle.setAttribute('aria-label', dark ? '切换到浅色主题' : '切换到深色主题');
-  els.themeToggle.title = `${dark ? '深色' : '浅色'} · ${themeMode === 'auto' ? '跟随日出日落' : '已手动锁定'}`;
+  paintThemeHint(dark);
 
   /* 工具栏着色跟着主题走：深色 = 原样（#11171d），浅色 = 壁纸均值色。
      ⚠️ 两个雷区（沿用）：
@@ -930,25 +1007,30 @@ function applyTheme(dark) {
 function initTheme() {
   applyTheme(themeMode === 'auto' ? autoDark() : themeMode === 'dark');
 }
-// 真实定位到手后重判一次，并把坐标缓存半天（天气与主题共用同一份）。
-// 只有真拿到定位才写缓存：否则会把默认城市坐标当有效值存下来，
+// 定位到手后重判一次，并把坐标缓存半天（天气与主题共用同一份）。
+// 只有真拿到坐标才写缓存：否则会把默认城市坐标当有效值存下来，
 // 之后 12 小时内都不会再尝试真定位（这也是「改了定位却一直没变」的另一个坑）。
 async function syncThemeLocation() {
   const coords = await resolveCoordsOnce();
   if (coords) {
-    writeJson(STORAGE.coords, { lat: coords.lat, lng: coords.lng, t: Date.now(), src: 'geo' });
-    geoHint = '按本机定位';
-    if (themeMode === 'auto' && autoDark() !== els.root.classList.contains('dark')) applyTheme(autoDark());
+    writeJson(STORAGE.coords, { lat: coords.lat, lng: coords.lng, t: Date.now(), src: coords.src, label: coords.label });
+    geoHint = coords.src === 'ip' ? `按 IP 定位（${coords.label}）` : '按本机定位';
+    const dark = themeMode === 'auto' ? autoDark() : els.root.classList.contains('dark');
+    if (dark !== els.root.classList.contains('dark')) applyTheme(dark);
+    else paintThemeHint(dark);   // 主题没变也要重画提示：坐标换了，日出日落时刻跟着变
   } else {
     geoHint = '未取到定位，按默认城市';
   }
   writeWeatherTitle();
 }
-// 每分钟检查一次，跨过日出 / 日落就自动切换（纯计算，开销可忽略）
+// 每分钟检查一次，跨过日出 / 日落就自动切换（纯计算，开销可忽略）；
+// 顺便重画一次提示：日期一过零点，日出日落时刻就变了。
+// 手动档直接早退：这次浏览里用户说了算，刷新后再交回「地点 + 时间」。
 function tickTheme() {
   if (themeMode !== 'auto') return;
   const dark = autoDark();
   if (dark !== els.root.classList.contains('dark')) applyTheme(dark);
+  else paintThemeHint(dark);
 }
 
 /* ---------- 13. 事件绑定与启动 ---------- */
@@ -964,10 +1046,10 @@ els.engineMenu.addEventListener('click', (event) => {
 document.addEventListener('click', (event) => { if (!event.target.closest('.search-panel')) els.engineMenu.hidden = true; });
 els.sourceSwitch.addEventListener('click', switchTrendSource);
 els.wallpaperRefresh.addEventListener('click', () => runAsync('换一张', () => loadWallpaper(1)));
+/* 点击 = 相对**当前显示**切到反面（深 ↔ 浅），所以每次点都看得见变化；
+   不写 localStorage：手动只活在这次浏览里，刷新后重新从 auto 起步。 */
 els.themeToggle.addEventListener('click', () => {
-  // 手动点一下就锁定，不再跟随日出日落（title 会显示「已手动锁定」）
   themeMode = els.root.classList.contains('dark') ? 'light' : 'dark';
-  writeText(STORAGE.themeMode, themeMode);
   applyTheme(themeMode === 'dark');
 });
 
