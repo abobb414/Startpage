@@ -14,7 +14,7 @@ Clock · Weather · Daily photo · Trending lists · Sticky notes — everything
 [![Build](https://img.shields.io/badge/build-none%20required-22c55e?style=flat-square)](#quick-start)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-22c55e?style=flat-square)](#tech-stack)
 [![Size](https://img.shields.io/badge/HTML%2BCSS%2BJS-25%20KB%20gzip-0ea5e9?style=flat-square)](#performance)
-[![Tests](https://img.shields.io/badge/assertions-493%20passing-22c55e?style=flat-square)](#testing)
+[![Tests](https://img.shields.io/badge/assertions-541%20passing-22c55e?style=flat-square)](#testing)
 [![Vanilla JS](https://img.shields.io/badge/vanilla-JavaScript-f7df1e?style=flat-square)](#tech-stack)
 
 </div>
