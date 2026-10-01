@@ -2,6 +2,11 @@
 
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/logo-white.png" />
+  <img src="./docs/images/logo.png" alt="Start · Daily Workspace" width="124" />
+</picture>
+
 # Start · Daily Workspace
 
 **A browser start page that's ready the moment you open it. Pure static, zero dependencies, zero build.**
