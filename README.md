@@ -2,6 +2,11 @@
 
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/logo-white.png" />
+  <img src="./docs/images/logo.png" alt="Start · Daily Workspace" width="124" />
+</picture>
+
 # Start · Daily Workspace
 
 **打开就用的浏览器起始页。纯静态、零依赖、零构建。**
