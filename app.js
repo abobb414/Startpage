@@ -96,10 +96,10 @@ const WALLPAPER_FALLBACK = [
 
 // 搜索引擎官方图标（本地官方资产，来源见 assets/engines/SOURCES.txt）
 const ENGINE_ICONS = {
-  duckduckgo: '/assets/engines/duckduckgo.png?v=a047a0e9',
+  duckduckgo: '/assets/engines/duckduckgo.svg?v=a96b9590',
   bing: '/assets/engines/bing.svg?v=a457db0f',
   google: '/assets/engines/google.svg?v=ed9087d7',
-  baidu: '/assets/engines/baidu.png?v=4999f55a',
+  baidu: '/assets/engines/baidu.svg?v=3e022421',
 };
 const ENGINE_LABELS = { duckduckgo: 'DuckDuckGo', bing: 'Bing', google: 'Google', baidu: '百度' };
 const engines = {

@@ -1,5 +1,7 @@
 四家搜索引擎的官方图标（均为官方原始资产，未做任何重绘/改色）
-duckduckgo.png  https://icons.duckduckgo.com/ip3/duckduckgo.com.ico   (DuckDuckGo 官方图标服务, 转 PNG 32px)
+duckduckgo.svg  DuckDuckGo 官方 SVG 图标（2026-10-03 升级为矢量；随后应用户要求去掉外层白色
+                圆角徽章 rect 并收紧 viewBox 至 -124..124，橙圆占比 84%→87%，浅色底观感
+                与 Bing/百度一致。未重绘未改色，鸭子出圆部分为官方设计）
 bing.svg        https://upload.wikimedia.org/wikipedia/commons/0/07/Bing_favicon.svg   (Bing 官方 favicon 矢量 32x32)
 google.svg      https://upload.wikimedia.org/wikipedia/commons/c/c1/Google_%22G%22_logo.svg   (Google 官方 "G" 矢量 24x24，四色 #4285F4/#EA4335/#FBBC05/#34A853)
-baidu.png       https://www.baidu.com/favicon.ico   (百度官网 favicon, 转 PNG 64px)
+baidu.svg       百度官方 Logo SVG（#2319dc 单色爪印，透明底，2026-10-03 由 favicon.ico 64px 升级为矢量）
