@@ -1,4 +1,11 @@
+<p align="center"><b>简体中文</b> | <a href="./README.en.md">English</a></p>
+
 <div align="center">
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="./docs/images/logo-white.png" />
+  <img src="./docs/images/logo.png" alt="Start · Daily Workspace" width="124" />
+</picture>
 
 # Start · Daily Workspace
 
@@ -12,7 +19,7 @@
 [![Build](https://img.shields.io/badge/build-none%20required-22c55e?style=flat-square)](#快速开始)
 [![Dependencies](https://img.shields.io/badge/dependencies-0-22c55e?style=flat-square)](#技术栈)
 [![Size](https://img.shields.io/badge/HTML%2BCSS%2BJS-25%20KB%20gzip-0ea5e9?style=flat-square)](#性能)
-[![Tests](https://img.shields.io/badge/assertions-493%20passing-22c55e?style=flat-square)](#测试)
+[![Tests](https://img.shields.io/badge/assertions-541%20passing-22c55e?style=flat-square)](#测试)
 [![Vanilla JS](https://img.shields.io/badge/vanilla-JavaScript-f7df1e?style=flat-square)](#技术栈)
 
 </div>
