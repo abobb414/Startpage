@@ -94,24 +94,23 @@ const WALLPAPER_FALLBACK = [
   { id: 'photo-1494548162494-384bba4ab999' },
 ];
 
-// 搜索引擎官方图标（本地官方资产，来源见 assets/engines/SOURCES.txt）
-const ENGINE_ICONS = {
-  duckduckgo: '/assets/engines/duckduckgo.svg?v=a96b9590',
-  bing: '/assets/engines/bing.svg?v=a457db0f',
-  google: '/assets/engines/google.svg?v=ed9087d7',
-  baidu: '/assets/engines/baidu.svg?v=3e022421',
+// 搜索引擎目录：图标、文案和查询地址只在这里维护。
+const ENGINE_CONFIG = {
+  duckduckgo: { label: 'DuckDuckGo', icon: '/assets/engines/duckduckgo.svg?v=a96b9590', url: 'https://duckduckgo.com/?q=' },
+  bing: { label: 'Bing', icon: '/assets/engines/bing.svg?v=a457db0f', url: 'https://www.bing.com/search?q=' },
+  google: { label: 'Google', icon: '/assets/engines/google.svg?v=ed9087d7', url: 'https://www.google.com/search?q=' },
+  baidu: { label: '百度', icon: '/assets/engines/baidu.svg?v=3e022421', url: 'https://www.baidu.com/s?wd=' },
 };
-const ENGINE_LABELS = { duckduckgo: 'DuckDuckGo', bing: 'Bing', google: 'Google', baidu: '百度' };
-const engines = {
-  duckduckgo: 'https://duckduckgo.com/?q=',
-  bing: 'https://www.bing.com/search?q=',
-  google: 'https://www.google.com/search?q=',
-  baidu: 'https://www.baidu.com/s?wd=',
-};
-function engineName(key) { return ENGINE_LABELS[key] || key; }
+const engines = Object.fromEntries(Object.entries(ENGINE_CONFIG).map(([key, config]) => [key, config.url]));
+function engineName(key) { return ENGINE_CONFIG[key]?.label || key; }
 function engineIcon(key) {
-  const src = ENGINE_ICONS[key];
+  const src = ENGINE_CONFIG[key]?.icon;
   return src ? `<span class="engine-ico"><img src="${src}" alt="" /></span>` : '';
+}
+function renderEngineMenu() {
+  els.engineMenu.innerHTML = Object.entries(ENGINE_CONFIG).map(([key, config]) =>
+    `<button type="button" data-engine="${key}">${engineIcon(key)}<span class="engine-name">${config.label}</span></button>`
+  ).join('');
 }
 
 /* ---------- 3. 存储层 ----------
@@ -275,6 +274,9 @@ function renderHeroNote() {
 // 大字的墨迹才永远压在块左缘 —— 不扣的话，09 点跳到 10 点，整块数字会横移 8.4px。
 const CLOCK_LEAD = { '0': '-.093em', '1': '-.182em', '2': '-.083em' };
 
+const DATE_FORMATTER = new Intl.DateTimeFormat('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' });
+let clockDate = '';
+
 function updateClock() {
   const now = new Date();
   const hour = now.getHours();
@@ -282,7 +284,11 @@ function updateClock() {
   els.clock.textContent = `${hh}:${String(now.getMinutes()).padStart(2, '0')}`;
   els.clock.style.setProperty('--clock-lead', CLOCK_LEAD[hh[0]] || '-.083em');
   els.greeting.textContent = hour < 6 ? '夜深了' : hour < 12 ? '早上好' : hour < 18 ? '下午好' : '晚上好';
-  els.dateLabel.textContent = new Intl.DateTimeFormat('zh-CN', { weekday: 'long', month: 'long', day: 'numeric' }).format(now);
+  const nextDate = dateKey(now);
+  if (nextDate !== clockDate) {
+    clockDate = nextDate;
+    els.dateLabel.textContent = DATE_FORMATTER.format(now);
+  }
 }
 
 /* ---------- 7. 便签 ---------- */
@@ -333,7 +339,8 @@ function clearNotes() {
 
 /* ---------- 8. 搜索 ---------- */
 
-let engine = ENGINE_LABELS[readText(STORAGE.engine)] ? readText(STORAGE.engine) : 'google';
+const storedEngine = readText(STORAGE.engine);
+let engine = ENGINE_CONFIG[storedEngine] ? storedEngine : 'google';
 function setEngine(next) {
   engine = engines[next] ? next : 'google';
   writeText(STORAGE.engine, engine);
@@ -433,7 +440,8 @@ function readTrendCache(kind) {
   return { at: Number(cache.at) || 0, items: cache.items };
 }
 
-let trendSource = TREND_SOURCES[readText(STORAGE.trendSource)] ? readText(STORAGE.trendSource) : 'zhihu';
+const storedTrendSource = readText(STORAGE.trendSource);
+let trendSource = TREND_SOURCES[storedTrendSource] ? storedTrendSource : 'zhihu';
 let trendsBusy = false;
 
 async function loadTrends() {
@@ -615,7 +623,6 @@ async function loadWeather() {
   } catch {
     els.weatherText.textContent = '天气未连接';
     if (els.weatherIcon) {
-      els.weatherIcon.innerHTML = '';
       els.weatherIcon.style.webkitMaskImage = '';
       els.weatherIcon.style.maskImage = '';
     }
@@ -961,28 +968,29 @@ function themeCoords() {
   const fresh = cached && COORDS_SOURCES.includes(cached.src) && Date.now() - Number(cached.t) < 12 * 3600e3;
   return fresh && Number.isFinite(cached.lat) && Number.isFinite(cached.lng) ? cached : DEFAULT_COORDS;
 }
-// 当天的日出日落（含坐标来源与地名），主题判定与提示文案共用同一份计算。
+// 当天的日出日落，主题判定与提示文案共用同一份计算。
 function todaySun() {
-  const { lat, lng, src, label } = themeCoords();
-  return { ...sunTimes(new Date(), lat, lng), src: src || 'default', label: label || DEFAULT_COORDS.label };
+  const { lat, lng, label } = themeCoords();
+  return { ...sunTimes(new Date(), lat, lng), label: label || DEFAULT_COORDS.label };
 }
 // 日出前 30 分钟（民用晨光）转浅色、日落后 30 分钟（民用暮光结束）转深色 —— 天色先于人眼
 // 感知变化，卡在日出日落那一秒会让屏幕在天还没亮透时就白、天还有余光时就黑。
 const SUN_BUFFER = 30 * 60e3;
-function autoDark() {
-  const sun = todaySun();
+function isDarkAt(sun) {
   if (sun.polar === 'day') return false;
   if (sun.polar === 'night') return true;
   const now = Date.now();
   return now < sun.sunrise.getTime() - SUN_BUFFER || now >= sun.sunset.getTime() + SUN_BUFFER;
+}
+function autoDark() {
+  return isDarkAt(todaySun());
 }
 const SUN_CLOCK = new Intl.DateTimeFormat('zh-CN', { hour: '2-digit', minute: '2-digit', hour12: false });
 // 提示文案只说「现在是什么色 + 当地今天几点日出日落 + 坐标哪来的」，手动档与自动档同构。
 // **不写「手动 / 自动 / 再点会切到哪 / 刷新会怎样」这类说明**（用户定案）：
 // 切换是手动、刷新回自动，行为本身就直白，用不着在按钮上再讲一遍；
 // aria-label 也只说这个按钮做什么。角标指示灯同样不做。
-function paintThemeHint(dark) {
-  const sun = todaySun();
+function paintThemeHint(dark, sun = todaySun()) {
   const place = ` · ${sun.label}`;
   els.themeToggle.setAttribute('aria-label', `切换到${dark ? '浅色' : '深色'}主题`);
   if (sun.polar === 'day') {
@@ -993,9 +1001,9 @@ function paintThemeHint(dark) {
     els.themeToggle.title = `${dark ? '深色' : '浅色'} · 日出 ${SUN_CLOCK.format(sun.sunrise)} / 日落 ${SUN_CLOCK.format(sun.sunset)}${place}`;
   }
 }
-function applyTheme(dark) {
+function applyTheme(dark, sun) {
   els.root.classList.toggle('dark', dark);
-  paintThemeHint(dark);
+  paintThemeHint(dark, sun);
 
   /* 工具栏着色跟着主题走：深色 = 原样（#11171d），浅色 = 壁纸均值色。
      ⚠️ 两个雷区（沿用）：
@@ -1005,7 +1013,8 @@ function applyTheme(dark) {
   writeChromeTint();
 }
 function initTheme() {
-  applyTheme(themeMode === 'auto' ? autoDark() : themeMode === 'dark');
+  const sun = todaySun();
+  applyTheme(themeMode === 'auto' ? isDarkAt(sun) : themeMode === 'dark', sun);
 }
 // 定位到手后重判一次，并把坐标缓存半天（天气与主题共用同一份）。
 // 只有真拿到坐标才写缓存：否则会把默认城市坐标当有效值存下来，
@@ -1015,9 +1024,10 @@ async function syncThemeLocation() {
   if (coords) {
     writeJson(STORAGE.coords, { lat: coords.lat, lng: coords.lng, t: Date.now(), src: coords.src, label: coords.label });
     geoHint = coords.src === 'ip' ? `按 IP 定位（${coords.label}）` : '按本机定位';
-    const dark = themeMode === 'auto' ? autoDark() : els.root.classList.contains('dark');
-    if (dark !== els.root.classList.contains('dark')) applyTheme(dark);
-    else paintThemeHint(dark);   // 主题没变也要重画提示：坐标换了，日出日落时刻跟着变
+    const sun = todaySun();
+    const dark = themeMode === 'auto' ? isDarkAt(sun) : els.root.classList.contains('dark');
+    if (dark !== els.root.classList.contains('dark')) applyTheme(dark, sun);
+    else paintThemeHint(dark, sun);   // 主题没变也要重画提示：坐标换了，日出日落时刻跟着变
   } else {
     geoHint = '未取到定位，按默认城市';
   }
@@ -1028,9 +1038,10 @@ async function syncThemeLocation() {
 // 手动档直接早退：这次浏览里用户说了算，刷新后再交回「地点 + 时间」。
 function tickTheme() {
   if (themeMode !== 'auto') return;
-  const dark = autoDark();
-  if (dark !== els.root.classList.contains('dark')) applyTheme(dark);
-  else paintThemeHint(dark);
+  const sun = todaySun();
+  const dark = isDarkAt(sun);
+  if (dark !== els.root.classList.contains('dark')) applyTheme(dark, sun);
+  else paintThemeHint(dark, sun);
 }
 
 /* ---------- 13. 事件绑定与启动 ---------- */
@@ -1056,6 +1067,7 @@ els.themeToggle.addEventListener('click', () => {
 /* 启动：同步的先做完（首屏不该有等待），耗时的并行跑、彼此隔离 ——
    任何一块失败都只影响它自己。 */
 initTheme();
+renderEngineMenu();
 setEngine(engine);
 syncSourceSwitch();
 updateClock();

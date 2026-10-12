@@ -71,8 +71,6 @@ button,input{font:inherit;color:inherit}
 /* ---------- 6. 顶栏 ---------- */
 .topbar{display:flex;align-items:center;justify-content:space-between;padding:27px clamp(22px,5vw,76px)}
 .brand{display:inline-flex;align-items:center;gap:10px;color:inherit;-webkit-tap-highlight-color:transparent;cursor:default;user-select:none}
-/* logo 点击无任何视觉反馈（用户定案）：全局 tap-highlight 对这条链接没压干净，单独钉死 */
-.brand:active,.brand:focus{opacity:1;color:inherit;background:transparent}
 .brand-copy{display:flex;flex-direction:column;line-height:1.1}
 .brand-copy strong{font-size:14px;font-weight:700;letter-spacing:.02em}
 .brand-copy small{margin-top:4px;color:var(--muted);font:10px 'DM Mono',monospace;letter-spacing:.04em}
@@ -83,7 +81,6 @@ button,input{font:inherit;color:inherit}
    手机上不需要靠一颗小圆点去分辨「自动 / 手动」—— 刷新就回到自动。 */
 .icon-button:hover{opacity:.72}
 .icon-button:focus-visible{outline:1px solid currentColor;outline-offset:4px}
-.icon-button.small{width:29px;height:29px}
 /* 主题切换图标：Icons8 SF Regular PNG（assets/theme/），mask 渲染成 currentColor，
    颜色跟文字一族（.icon-button 色值见下方分支）；两个 span 叠同一格，明暗交叉淡入。 */
 .theme-ico{grid-area:1/1;width:20px;height:20px;background-color:currentColor;-webkit-mask-position:center;-webkit-mask-repeat:no-repeat;-webkit-mask-size:contain;mask-position:center;mask-repeat:no-repeat;mask-size:contain}
@@ -109,7 +106,6 @@ button,input{font:inherit;color:inherit}
    实测 94px 字号下上隙 24px / 下隙 14px，用 em 边距把字迹上提 0.053em、把下隙补回，
    em 随字号缩放，手机 clamp 小字号同样成立。 */
 .hero-meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-family:'DM Mono',monospace;font-size:13px;font-weight:600;letter-spacing:.04em;line-height:1.45}
-.hero-meta #clock{color:var(--ink);font-weight:600}
 .hero-meta #weatherText{font-weight:600}
 .hero-meta .weather-ico{width:20px;height:20px;margin-left:-2px}
 .meta-divider{width:3px;height:3px;background:var(--line-strong);border-radius:50%}
@@ -207,8 +203,7 @@ button,input{font:inherit;color:inherit}
 :root:not(.dark) .brand{color:var(--wp-top-ink)}
 :root:not(.dark) .hero-block .eyebrow,
 :root:not(.dark) .hero-block .hero-meta{color:var(--wp-top-muted)}
-:root:not(.dark) .hero-block h1,
-:root:not(.dark) .hero-meta #clock{color:var(--wp-top-ink)}
+:root:not(.dark) .hero-block h1{color:var(--wp-top-ink)}
 :root:not(.dark) .hero-block .hero-note,
 :root:not(.dark) .brand-copy small{color:var(--wp-top-faint)}
 :root:not(.dark) .hero-block .meta-divider{background:var(--wp-top-divider)}
