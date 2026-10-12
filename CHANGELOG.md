@@ -5,6 +5,42 @@
 
 ## [Unreleased]
 
+### 2026-10-12 · 引擎配置单一数据源 + 主题/日期计算去重
+
+#### Changed
+
+- **搜索引擎配置合并到 `ENGINE_CONFIG`**：图标、文案、查询地址此前散在 `ENGINE_ICONS` /
+  `ENGINE_LABELS` / `engines` 三处，现统一为一个对象，`engines` / `engineName()` /
+  `engineIcon()` 全部由它派生。新增 `renderEngineMenu()` 由 JS 生成菜单，
+  **index.html 里那份手写的四条按钮 markup 随之删除**（现为空容器）。
+  点击仍走容器上的事件委托（`closest('[data-engine]')`），动态生成不影响绑定。
+- **`Intl.DateTimeFormat` 提为模块级缓存**（原来每次 tick 都新建一个），并用 `clockDate`
+  控制「日期真变了才写 DOM」，秒级 tick 不再空转改文本。
+- **主题链路引入 `isDarkAt(sun)`**：日出日落每次主题更新只算一次，`initTheme` /
+  `tickTheme` / `syncThemeLocation` 共用同一份；`applyTheme(dark, sun)` 与
+  `paintThemeHint(dark, sun)` 接受外部传入（不传则自算，兼容既有调用）。
+  `autoDark()` 保留为兼容包装。
+- **删除无效操作**：`todaySun()` 不再返回无人消费的 `src`；天气失败分支不再清空
+  本来就为空的 `weatherIcon.innerHTML`（该元素只用 mask-image 呈现）；
+  styles.css 删掉三条确认失效的规则 —— `.brand:active,.brand:focus`（`.brand` 现为 `div`）、
+  `.icon-button.small`（无引用）、`.hero-meta #clock` 两条（`#clock` 是 `.hero-block` 下的 `h1`）。
+- 重构时被顺手删掉的 `applyTheme`「⚠️ 两个雷区」注释已补回 —— 那是「工具栏闪烁 hack
+  导致深色模式抽风」的踩坑记录，属于决策文档。
+
+#### Fixed
+
+- 交互场景从失败恢复为 **106/106**（引擎菜单改由 JS 生成后选择器重新对齐）。
+
+#### 验证
+
+- `node --check app.js` / `git diff --check` 通过；`bash tests/run.sh` **11 场景全绿**
+  （default 79 / cached 79 / dirty 86 / public 77 / offline 58 / interactive 106 /
+  wpfail 75 / picfail 72 / assets 79 / search / ipcross 74），`wpfail` 连跑 3 次均 75/75。
+- 线上端到端（start.abobb.com，真实浏览器）：菜单 4 项由 JS 生成、图标全部加载、
+  点击切换后顶栏文案与图标同步且写入 `start-local-engine-v1`、回车跳转
+  `duckduckgo.com/?q=` 中文正确编码、时钟与日期正常渲染、主题与 `--chrome-tint-wallpaper` 正常、
+  无失败请求。
+
 ### 2026-09-30（II）· favicon 源图升级为 icons8 原生 1600px
 
 #### Changed
